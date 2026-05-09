@@ -441,36 +441,72 @@ function drawDonut(id, data, colors, labels) {
   const ctx = clearCanvas(id);
   if (!ctx) return;
   const c = document.getElementById(id);
-  const cx=c.width/2, cy=c.height/2, R=Math.min(cx,cy)-20, r=R*0.55;
+  const W = c.width, H = c.height;
+  const legendH = Math.min(labels.length, 7) * 20 + 12;
+  const chartH   = H - legendH;
+  const cx = W/2, cy = chartH/2;
+  const R = Math.min(cx, cy) - 14;
+  const r = R * 0.6;
   const total = data.reduce((a,b)=>a+b,0);
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+
   if (!total) {
-    ctx.fillStyle='#ccc'; ctx.font='14px Plus Jakarta Sans';
-    ctx.textAlign='center'; ctx.fillText('Sin datos',cx,cy); return;
+    ctx.fillStyle = '#D7C2A8';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Sin datos aún', cx, cy);
+    return;
   }
-  let angle = -Math.PI/2;
-  data.forEach((val,i) => {
-    const slice = (val/total)*Math.PI*2;
+
+  // Draw slices with gaps
+  let angle = -Math.PI / 2;
+  const gap = 0.025;
+  data.forEach((val, i) => {
+    if (!val) return;
+    const slice = (val / total) * Math.PI * 2 - gap;
     ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,R,angle,angle+slice);
+    ctx.arc(cx, cy, R, angle + gap/2, angle + slice + gap/2);
+    ctx.arc(cx, cy, r, angle + slice + gap/2, angle + gap/2, true);
     ctx.closePath();
-    ctx.fillStyle = colors[i]||'#ccc';
+    ctx.fillStyle = colors[i] || '#ccc';
     ctx.fill();
-    angle += slice;
+    angle += slice + gap;
   });
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
-  ctx.fillStyle='#2B2B2B'; ctx.font='bold 22px Plus Jakarta Sans';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(total, cx, cy-8);
-  ctx.font='11px Plus Jakarta Sans'; ctx.fillStyle='#888';
-  ctx.fillText('contenidos', cx, cy+12);
-  // legend
-  const lx=10, startY=c.height-labels.length*18-8;
-  labels.forEach((lbl,i) => {
-    ctx.fillStyle=colors[i]||'#ccc'; ctx.fillRect(lx,startY+i*18,12,12);
-    ctx.fillStyle='#444'; ctx.font='11px Plus Jakarta Sans';
-    ctx.textAlign='left'; ctx.textBaseline='top';
-    ctx.fillText(`${lbl} (${data[i]})`, lx+16, startY+i*18);
+
+  // Center hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+
+  // Center text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#4A1D05';
+  ctx.font = 'bold 26px Instrument Serif, serif';
+  ctx.fillText(total, cx, cy - 8);
+  ctx.font = '10px Inter, sans-serif';
+  ctx.fillStyle = '#8B8B8B';
+  ctx.fillText('total', cx, cy + 12);
+
+  // Legend at bottom (only non-zero)
+  const shown = labels.map((l,i)=>({l,i,v:data[i]})).filter(x=>x.v>0).slice(0,7);
+  const lx = 6;
+  shown.forEach(({l, i, v}, idx) => {
+    const y = chartH + 10 + idx * 20;
+    // dot
+    ctx.beginPath();
+    ctx.arc(lx + 5, y + 6, 5, 0, Math.PI*2);
+    ctx.fillStyle = colors[i] || '#ccc';
+    ctx.fill();
+    ctx.fillStyle = '#5C5C5C';
+    ctx.font = '10.5px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`${l}  ${v}`, lx + 14, y);
   });
 }
 
@@ -478,65 +514,73 @@ function drawVerticalBar(id, labels, values, color='#F45A00', maxVal) {
   const ctx = clearCanvas(id);
   if (!ctx) return;
   const c = document.getElementById(id);
-  const dpr = window.devicePixelRatio || 1;
   const W = c.width, H = c.height;
-  const padL=40, padR=12, padT=28, padB=36;
+  const padL=36, padR=12, padT=24, padB=32;
   const chartW = W-padL-padR, chartH = H-padT-padB;
   const maxV = maxVal || Math.max(...values, 1);
   const n = labels.length;
-  const groupW = chartW / Math.max(n,1);
-  const barW = Math.min(groupW*0.55, 44);
+  const groupW = chartW / Math.max(n, 1);
+  const barW = Math.min(groupW * 0.5, 40);
 
-  // bg
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
 
-  // grid lines
-  const steps = 4;
-  for (let s=0; s<=steps; s++) {
-    const pct = s/steps;
-    const y = padT + chartH*(1-pct);
-    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y);
-    ctx.strokeStyle = s===0 ? 'rgba(74,29,5,0.15)' : 'rgba(74,29,5,0.06)';
-    ctx.lineWidth=1; ctx.stroke();
-    const val = Math.round(maxV*pct);
-    ctx.fillStyle='#999'; ctx.font='9px Plus Jakarta Sans';
-    ctx.textAlign='right'; ctx.textBaseline='middle';
-    ctx.fillText(val, padL-5, y);
-  }
-
-  labels.forEach((lbl,i) => {
-    const cx = padL + groupW*i + groupW/2;
-    const x  = cx - barW/2;
-    const bH = Math.max(2, (values[i]/maxV)*chartH);
-    const y  = padT + chartH - bH;
-
-    // bar gradient
-    const grad = ctx.createLinearGradient(x, y, x, y+bH);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, color+'99');
-    ctx.fillStyle = grad;
-    // rounded top
-    const r = Math.min(6, barW/2);
+  // Grid lines (very soft)
+  [0, 0.25, 0.5, 0.75, 1].forEach(pct => {
+    const y = padT + chartH * (1 - pct);
     ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.lineTo(x+barW-r, y);
-    ctx.quadraticCurveTo(x+barW, y, x+barW, y+r);
-    ctx.lineTo(x+barW, y+bH);
-    ctx.lineTo(x, y+bH);
-    ctx.lineTo(x, y+r);
-    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.moveTo(padL, y); ctx.lineTo(W - padR, y);
+    ctx.strokeStyle = pct === 0 ? 'rgba(74,29,5,0.1)' : 'rgba(74,29,5,0.04)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    if (pct > 0) {
+      ctx.fillStyle = '#B0A89E';
+      ctx.font = '9px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(maxV * pct), padL - 5, y);
+    }
+  });
+
+  labels.forEach((lbl, i) => {
+    const cx = padL + groupW * i + groupW / 2;
+    const x  = cx - barW / 2;
+    const rawH = (values[i] / maxV) * chartH;
+    const bH = Math.max(3, rawH);
+    const y  = padT + chartH - bH;
+    const rr = Math.min(6, barW / 2);
+
+    // gradient bar
+    const grad = ctx.createLinearGradient(x, y, x, y + bH);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, color + 'AA');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + barW - rr, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + rr);
+    ctx.lineTo(x + barW, y + bH);
+    ctx.lineTo(x, y + bH);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
     ctx.closePath();
     ctx.fill();
 
-    // value on top
-    ctx.fillStyle='#333'; ctx.font='bold 11px Plus Jakarta Sans';
-    ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText(values[i], cx, y-3);
+    // value above bar
+    if (values[i] > 0) {
+      ctx.fillStyle = '#4A1D05';
+      ctx.font = '600 10.5px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(values[i], cx, y - 4);
+    }
 
     // label below
-    ctx.fillStyle='#777'; ctx.font='10px Plus Jakarta Sans';
-    ctx.textBaseline='top';
-    ctx.fillText(trunc(lbl,7), cx, padT+chartH+6);
+    ctx.fillStyle = '#8B8B8B';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(trunc(lbl, 7), cx, padT + chartH + 7);
   });
 }
 
@@ -544,58 +588,55 @@ function drawHorizontalBar(id, labels, values, color='#F45A00') {
   const ctx = clearCanvas(id);
   if (!ctx) return;
   const c = document.getElementById(id);
-  const W=c.width, H=c.height;
-  const padL=8, padR=60, padT=8, padB=8;
-  const labelW = 130;
+  const W = c.width, H = c.height;
+  const labelW = 126;
+  const padL = 8, padR = 64, padT = 6, padB = 6;
   const chartW = W - padL - labelW - padR;
-  const n = Math.max(labels.length,1);
+  const n = Math.max(labels.length, 1);
   const rowH = (H - padT - padB) / n;
   const maxV = Math.max(...values, 1);
 
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
 
-  labels.forEach((lbl,i) => {
-    const y = padT + i*rowH;
-    const bH = Math.max(rowH*0.45, 10);
-    const by = y + (rowH-bH)/2;
-    const bW = Math.max(4, (values[i]||0)/maxV * chartW);
+  labels.forEach((lbl, i) => {
+    const y  = padT + i * rowH;
+    const bH = Math.max(Math.round(rowH * 0.38), 8);
+    const by = y + (rowH - bH) / 2;
+    const bW = Math.max(4, ((values[i] || 0) / maxV) * chartW);
     const bx = padL + labelW;
+    const rr = bH / 2;
 
-    // bar bg track
-    ctx.fillStyle='#F8F5EF';
-    const r = bH/2;
+    // track
+    ctx.fillStyle = '#F8F5EF';
     ctx.beginPath();
-    ctx.moveTo(bx+r, by); ctx.lineTo(bx+chartW-r, by);
-    ctx.quadraticCurveTo(bx+chartW, by, bx+chartW, by+r);
-    ctx.lineTo(bx+chartW, by+bH-r);
-    ctx.quadraticCurveTo(bx+chartW, by+bH, bx+chartW-r, by+bH);
-    ctx.lineTo(bx+r, by+bH); ctx.quadraticCurveTo(bx, by+bH, bx, by+bH-r);
-    ctx.lineTo(bx, by+r); ctx.quadraticCurveTo(bx, by, bx+r, by);
-    ctx.closePath(); ctx.fill();
+    ctx.roundRect ? ctx.roundRect(bx, by, chartW, bH, rr)
+      : (ctx.rect(bx, by, chartW, bH));
+    ctx.fill();
 
-    // bar fill gradient
-    const grad = ctx.createLinearGradient(bx, 0, bx+bW, 0);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, color+'BB');
-    ctx.fillStyle=grad;
+    // fill
+    const grad = ctx.createLinearGradient(bx, 0, bx + bW, 0);
+    grad.addColorStop(0, color + 'EE');
+    grad.addColorStop(1, color + '99');
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(bx+r, by); ctx.lineTo(bx+bW-r, by);
-    ctx.quadraticCurveTo(bx+bW, by, bx+bW, by+r);
-    ctx.lineTo(bx+bW, by+bH-r);
-    ctx.quadraticCurveTo(bx+bW, by+bH, bx+bW-r, by+bH);
-    ctx.lineTo(bx+r, by+bH); ctx.quadraticCurveTo(bx, by+bH, bx, by+bH-r);
-    ctx.lineTo(bx, by+r); ctx.quadraticCurveTo(bx, by, bx+r, by);
-    ctx.closePath(); ctx.fill();
+    ctx.roundRect ? ctx.roundRect(bx, by, bW, bH, rr)
+      : (ctx.rect(bx, by, bW, bH));
+    ctx.fill();
 
     // label
-    ctx.fillStyle='#4A1D05'; ctx.font='600 11px Plus Jakarta Sans';
-    ctx.textAlign='right'; ctx.textBaseline='middle';
-    ctx.fillText(trunc(lbl,17), padL+labelW-8, y+rowH/2);
+    ctx.fillStyle = '#5C5C5C';
+    ctx.font = '500 11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(trunc(lbl, 16), padL + labelW - 8, y + rowH / 2);
 
     // value
-    ctx.fillStyle='#555'; ctx.font='bold 11px Plus Jakarta Sans';
-    ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillText((values[i]||0).toLocaleString(), bx+bW+8, y+rowH/2);
+    ctx.fillStyle = '#2B2B2B';
+    ctx.font = '600 11px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((values[i] || 0).toLocaleString(), bx + bW + 8, y + rowH / 2);
   });
 }
 
