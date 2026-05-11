@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 <body>
 
@@ -701,6 +701,74 @@
     <div class="modal-footer">
       <button class="btn-ghost"   onclick="closeModal('modal-confirm')">Cancelar</button>
       <button class="btn-danger"  id="confirmBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CALENDARIO ─────────────────────────── -->
+<div class="modal-overlay" id="modal-calendar">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 class="modal-title">📅 Agregar al calendario</h2>
+      <button class="modal-close" onclick="closeModal('modal-calendar')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Tipo de evento</label>
+        <select id="calEventType">
+          <option>Publicación</option>
+          <option>Grabación</option>
+          <option>Reunión</option>
+          <option>Entrega</option>
+          <option>Revisión</option>
+          <option>Aprobación</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Título</label>
+        <input type="text" id="calTitle" placeholder="Nombre del evento" />
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="calDate" />
+        </div>
+        <div class="form-group">
+          <label>Hora</label>
+          <input type="time" id="calTime" value="10:00" />
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Duración (minutos)</label>
+          <select id="calDuration">
+            <option value="30">30 min</option>
+            <option value="60" selected>1 hora</option>
+            <option value="90">1:30 h</option>
+            <option value="120">2 horas</option>
+            <option value="180">3 horas</option>
+            <option value="240">4 horas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Recordatorio</label>
+          <select id="calReminder">
+            <option value="10">10 min antes</option>
+            <option value="30" selected>30 min antes</option>
+            <option value="60">1 hora antes</option>
+            <option value="1440">1 día antes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="calNotes" rows="2" placeholder="Descripción opcional..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('modal-calendar')">Cancelar</button>
+      <button class="btn-secondary" onclick="downloadICS()" title="Descargar archivo .ics (Apple Calendar, Outlook)">⬇ Descargar .ics</button>
+      <button class="btn-primary" onclick="openGoogleCalendar()">📅 Abrir en Google Calendar</button>
     </div>
   </div>
 </div>

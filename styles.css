@@ -10,30 +10,30 @@
 
 /* ── Variables ── */
 :root {
-  /* Orange brand accent */
-  --orange:       #F45A00;
-  --orange-soft:  #FF7A30;
-  --orange-bg:    rgba(244,90,0,0.07);
-  --orange-border:rgba(244,90,0,0.18);
+  /* Brand accent — warm orange */
+  --orange:       #F66B00;
+  --orange-soft:  #F2A060;
+  --orange-bg:    rgba(246,107,0,0.08);
+  --orange-border:rgba(246,107,0,0.20);
 
-  /* Neutral backgrounds */
-  --bg:           #F9F8F7;
-  --bg-2:         #F3F2F0;
-  --white:        #FFFFFF;
+  /* Warm cream backgrounds */
+  --bg:           #F5F1EB;
+  --bg-2:         #EDE8DF;
+  --white:        #FFFCF8;
 
-  /* Sidebar */
-  --sidebar-bg:   #18181B;
+  /* Sidebar — café oscuro */
+  --sidebar-bg:   #4A1600;
   --sidebar-w:    224px;
 
-  /* Text */
-  --t-dark:       #18181B;
-  --t-mid:        #52525B;
-  --t-soft:       #A1A1AA;
-  --t-muted:      #D4D4D8;
+  /* Text — warm browns */
+  --t-dark:       #3A1200;
+  --t-mid:        #6B3A22;
+  --t-soft:       #9C7A60;
+  --t-muted:      #C4A98E;
 
-  /* Borders */
-  --border:       rgba(0,0,0,0.09);
-  --border-s:     rgba(0,0,0,0.05);
+  /* Borders — warm */
+  --border:       rgba(74,22,0,0.10);
+  --border-s:     rgba(74,22,0,0.06);
 
   /* Shadows */
   --sh-xs: 0 1px 2px rgba(0,0,0,0.04);
@@ -409,6 +409,23 @@ html, body {
   transition: all var(--t-fast);
 }
 .btn-danger:hover { background: #D93025; color: #fff; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-2);
+  color: var(--t-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.btn-secondary:hover { background: var(--border); color: var(--t-dark); }
 
 /* ══════════════════════════════════════════════
    KPI GRID
@@ -810,6 +827,7 @@ html, body {
 .btn-view  { background: #EFF6FF; color: #3B82F6; border-color: rgba(59,130,246,0.12); }
 .btn-edit  { background: #FFFBEB; color: #D97706; border-color: rgba(217,119,6,0.12); }
 .btn-stats { background: #F5F3FF; color: #7C3AED; border-color: rgba(124,58,237,0.12); }
+.btn-cal   { background: #FFF7ED; color: #059669; border-color: rgba(5,150,105,0.12); }
 .btn-del   { background: #FEF2F2; color: #DC2626; border-color: rgba(220,38,38,0.12); }
 .btn-action:hover { filter: brightness(0.90); transform: translateY(-1px); }
 
@@ -1029,6 +1047,18 @@ html, body {
 }
 .platform-tab:hover { color: var(--t-dark); }
 .platform-tab.active { color: var(--orange); border-color: var(--orange); font-weight: 600; }
+
+/* Platform native color chips (badges/icons only) */
+.plat-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600; padding: 2px 7px;
+  border-radius: var(--r-pill); border: 1px solid transparent;
+}
+.plat-chip.ig { color: #C13584; background: #FDF2F8; border-color: rgba(193,53,132,0.15); }
+.plat-chip.tk { color: #111111; background: #F5F5F5; border-color: rgba(0,0,0,0.10); }
+.plat-chip.fb { color: #1877F2; background: #EFF4FF; border-color: rgba(24,119,242,0.15); }
+.plat-chip.yt { color: #FF0000; background: #FFF0F0; border-color: rgba(255,0,0,0.12); }
+.plat-chip.li { color: #0A66C2; background: #EBF4FF; border-color: rgba(10,102,194,0.15); }
 
 .stats-form-grid { margin-top: 0; }
 .stats-engagement-box {

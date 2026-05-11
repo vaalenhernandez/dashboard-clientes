@@ -861,6 +861,7 @@ function renderParrilla() {
           <button class="btn-action btn-view"  onclick="viewContenido('${c.id}')"  title="Ver">👁</button>
           <button class="btn-action btn-edit"  onclick="openEditContenido('${c.id}')" title="Editar">✏</button>
           <button class="btn-action btn-stats" onclick="openStatsModal('${c.id}')" title="Stats">📊</button>
+          <button class="btn-action btn-cal"   onclick="openCalendarModal('contenido','${c.id}')" title="Agregar al calendario">📅</button>
           <button class="btn-action btn-del"   onclick="deleteContenido('${c.id}')" title="Eliminar">🗑</button>
         </div>
       </td>
@@ -1413,8 +1414,9 @@ function renderGrabaciones() {
     <td>${fmt(g.fechaEntrega)}</td>
     <td title="${g.obs}">${trunc(g.obs,20)}</td>
     <td><div class="actions-cell">
-      <button class="btn-action btn-edit" onclick="openEditGrabacion('${g.id}')">✏</button>
-      <button class="btn-action btn-del"  onclick="deleteGrabacion('${g.id}')">🗑</button>
+      <button class="btn-action btn-edit" onclick="openEditGrabacion('${g.id}')" title="Editar">✏</button>
+      <button class="btn-action btn-cal"  onclick="openCalendarModal('grabacion','${g.id}')" title="Agregar al calendario">📅</button>
+      <button class="btn-action btn-del"  onclick="deleteGrabacion('${g.id}')" title="Eliminar">🗑</button>
     </div></td>
   </tr>`).join('');
 }
@@ -1784,6 +1786,109 @@ function importData(event) {
   };
   reader.readAsText(file);
   event.target.value = ''; // reset input so same file can be re-imported
+}
+
+// ── CALENDARIO ────────────────────────────────────────────────
+let _calendarContext = null; // { type:'contenido'|'grabacion', id }
+
+function openCalendarModal(type, id) {
+  _calendarContext = { type, id };
+  const b = currentBrand();
+  let title = '', date = '', notes = '';
+
+  if (type === 'contenido') {
+    const c = b.contenidos.find(x => x.id === id);
+    if (!c) return;
+    title = c.idea ? trunc(c.idea, 60) : 'Publicación';
+    date  = c.ig?.fecha || c.tk?.fecha || '';
+    notes = [c.objetivo, c.hook, c.cta].filter(Boolean).join(' | ');
+  } else if (type === 'grabacion') {
+    const g = b.grabaciones.find(x => x.id === id);
+    if (!g) return;
+    title = `Grabación — ${g.persona || b.nombre}`;
+    date  = g.fecha || '';
+    notes = [g.lugar, g.vestuario && 'Vestuario: '+g.vestuario, g.props && 'Props: '+g.props].filter(Boolean).join(' | ');
+  }
+
+  document.getElementById('calTitle').value   = title;
+  document.getElementById('calDate').value    = date;
+  document.getElementById('calTime').value    = '10:00';
+  document.getElementById('calDuration').value = '60';
+  document.getElementById('calReminder').value = '30';
+  document.getElementById('calNotes').value   = notes;
+
+  const typeMap = { contenido: 'Publicación', grabacion: 'Grabación' };
+  document.getElementById('calEventType').value = typeMap[type] || 'Publicación';
+
+  openModal('modal-calendar');
+}
+
+function _calDateStr() {
+  const date     = document.getElementById('calDate').value;
+  const time     = document.getElementById('calTime').value || '10:00';
+  const duration = parseInt(document.getElementById('calDuration').value) || 60;
+  if (!date) return null;
+  const [h, m]  = time.split(':').map(Number);
+  const start   = new Date(`${date}T${time}:00`);
+  const end     = new Date(start.getTime() + duration * 60000);
+  const pad     = n => String(n).padStart(2, '0');
+  const toGCal  = d => `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  return { start, end, gcalStart: toGCal(start), gcalEnd: toGCal(end) };
+}
+
+function openGoogleCalendar() {
+  const ds = _calDateStr();
+  if (!ds) { showToast('Selecciona una fecha primero', 'error'); return; }
+  const title   = encodeURIComponent(document.getElementById('calTitle').value || 'Evento');
+  const details = encodeURIComponent(document.getElementById('calNotes').value || '');
+  const brand   = encodeURIComponent(currentBrand().nombre);
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${ds.gcalStart}/${ds.gcalEnd}&details=${details}&location=${brand}`;
+  window.open(url, '_blank');
+}
+
+function downloadICS() {
+  const ds = _calDateStr();
+  if (!ds) { showToast('Selecciona una fecha primero', 'error'); return; }
+
+  const title    = document.getElementById('calTitle').value   || 'Evento';
+  const notes    = document.getElementById('calNotes').value   || '';
+  const reminder = parseInt(document.getElementById('calReminder').value) || 30;
+  const brand    = currentBrand().nombre;
+
+  const pad    = n => String(n).padStart(2, '0');
+  const toICS  = d => `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+  const uid_ev = `pal-${Date.now()}@palpitare`;
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Palpitare Dashboard//ES',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `DTSTART:${toICS(ds.start)}`,
+    `DTEND:${toICS(ds.end)}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${notes.replace(/\n/g, '\\n')}`,
+    `LOCATION:${brand}`,
+    `UID:${uid_ev}`,
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:Recordatorio: ${title}`,
+    `TRIGGER:-PT${reminder}M`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${title.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g,'_').slice(0,40)}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Archivo .ics descargado ✓');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
