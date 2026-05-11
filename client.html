@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Aprobación</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:      #F45A00;
+      --brand-soft: rgba(244,90,0,0.08);
+      --brand-mid:  rgba(244,90,0,0.15);
+      --bg:         #F7F7F5;
+      --white:      #FFFFFF;
+      --t-dark:     #111111;
+      --t-mid:      #555555;
+      --t-soft:     #999999;
+      --border:     rgba(0,0,0,0.08);
+      --border-s:   rgba(0,0,0,0.05);
+      --sh-s:  0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --sh-m:  0 4px 16px rgba(0,0,0,0.08);
+      --r:     12px;
+      --r-sm:  8px;
+      --r-lg:  16px;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--t-dark);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── AUTH GATE ── */
+    #authGate {
+      position: fixed; inset: 0;
+      background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+    #authGate.hidden { display: none; }
+
+    .auth-card {
+      width: 100%; max-width: 360px;
+      text-align: center;
+    }
+    .auth-brand-avatar {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 26px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .auth-title {
+      font-size: 20px; font-weight: 700;
+      color: var(--t-dark);
+      margin-bottom: 6px;
+    }
+    .auth-sub {
+      font-size: 13px; color: var(--t-soft);
+      margin-bottom: 28px;
+    }
+    .auth-input {
+      width: 100%; padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      font-size: 16px; font-family: inherit;
+      text-align: center; letter-spacing: 4px;
+      outline: none;
+      transition: border-color 0.15s;
+      background: var(--bg);
+    }
+    .auth-input:focus { border-color: var(--brand); }
+    .auth-input.error { border-color: #DC2626; animation: shake 0.3s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .auth-btn {
+      width: 100%; margin-top: 12px;
+      padding: 13px;
+      background: var(--brand);
+      color: #fff;
+      border: none; border-radius: var(--r);
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .auth-btn:hover { opacity: 0.9; }
+    .auth-error {
+      margin-top: 10px;
+      font-size: 13px; color: #DC2626;
+      min-height: 18px;
+    }
+    .auth-no-pin {
+      font-size: 12px; color: var(--t-soft);
+      margin-top: 24px;
+    }
+
+    /* ── APP ── */
+    #app { display: none; }
+
+    /* ── BRAND HEADER ── */
+    .brand-header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border-s);
+      padding: 0 24px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .brand-header-inner {
+      max-width: 960px; margin: 0 auto;
+      display: flex; align-items: center;
+      gap: 16px; height: 60px;
+    }
+    .brand-avatar-sm {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-header-name {
+      font-size: 15px; font-weight: 700;
+      color: var(--t-dark); flex: 1;
+    }
+    .brand-header-tag {
+      font-size: 12px; color: var(--t-soft);
+      background: var(--bg);
+      padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border-s);
+    }
+    .powered-by {
+      font-size: 11px; color: var(--t-soft);
+      white-space: nowrap;
+    }
+
+    /* ── PAGE CONTAINER ── */
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    /* ── MONTH TABS ── */
+    .month-tabs {
+      display: flex; gap: 6px;
+      overflow-x: auto; scrollbar-width: none;
+      padding-bottom: 4px;
+      margin-bottom: 28px;
+    }
+    .month-tabs::-webkit-scrollbar { display: none; }
+    .month-tab {
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--t-mid);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .month-tab:hover { border-color: var(--brand); color: var(--brand); }
+    .month-tab.active {
+      background: var(--brand); color: #fff;
+      border-color: var(--brand);
+    }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .stat-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: var(--white);
+      border: 1px solid var(--border-s);
+      border-radius: 20px;
+      font-size: 13px;
+      box-shadow: var(--sh-s);
+    }
+    .stat-pill-val { font-weight: 700; color: var(--t-dark); }
+    .stat-pill-lbl { color: var(--t-soft); }
+    .stat-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── SECTION TITLE ── */
+    .section-title {
+      font-size: 18px; font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--t-dark);
+    }
+    .section-sub {
+      font-size: 13px; color: var(--t-soft);
+      margin-top: 3px; margin-bottom: 20px;
+    }
+
+    /* ── CONTENT CARDS ── */
+    .content-grid {
+      display: flex; flex-direction: column;
+      gap: 10px;
+      margin-bottom: 52px;
+    }
+
+    .content-card {
+      background: var(--white);
+      border-radius: var(--r);
+      border: 1px solid var(--border-s);
+      box-shadow: var(--sh-s);
+      overflow: hidden;
+      display: flex;
+    }
+    .content-card-bar {
+      width: 4px; flex-shrink: 0;
+      background: var(--brand);
+    }
+    .content-card-bar.published { background: #059669; }
+    .content-card-bar.pending   { background: #D97706; }
+    .content-card-bar.rejected  { background: #DC2626; }
+    .content-card-bar.unpub     { background: #94A3B8; }
+
+    .content-card-body {
+      padding: 14px 16px;
+      flex: 1;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .content-card-row1 {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .type-badge {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 8px; border-radius: 6px;
+      background: var(--bg);
+      color: var(--t-mid);
+      border: 1px solid var(--border);
+    }
+    .date-chip {
+      font-size: 12px; color: var(--t-soft);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .plat-chip {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 8px; border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .plat-chip.ig { color: #C13584; background: #FDF2F8; border-color: rgba(193,53,132,0.15); }
+    .plat-chip.tk { color: #111111; background: #F5F5F5; }
+    .plat-chip.fb { color: #1877F2; background: #EFF4FF; border-color: rgba(24,119,242,0.15); }
+
+    .content-idea {
+      font-size: 14px; font-weight: 600;
+      color: var(--t-dark);
+      line-height: 1.4;
+    }
+    .content-obs {
+      font-size: 12px; color: var(--t-soft);
+      font-style: italic;
+      padding: 8px 10px;
+      background: var(--bg);
+      border-radius: 8px;
+      border-left: 3px solid var(--border);
+    }
+
+    /* Approval row */
+    .approval-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .approval-status {
+      font-size: 12px; font-weight: 600;
+      padding: 5px 12px; border-radius: 20px;
+      border: 1.5px solid;
+    }
+    .approval-status.approved {
+      background: #ECFDF5; color: #059669;
+      border-color: rgba(5,150,105,0.2);
+    }
+    .approval-status.cambios {
+      background: #FFFBEB; color: #D97706;
+      border-color: rgba(217,119,6,0.2);
+    }
+    .approval-status.pending {
+      background: #F8FAFC; color: #64748B;
+      border-color: rgba(100,116,139,0.15);
+    }
+    .btn-approve {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid;
+      transition: all 0.15s;
+      background: transparent;
+    }
+    .btn-approve.approve {
+      color: #059669; border-color: rgba(5,150,105,0.3);
+    }
+    .btn-approve.approve:hover {
+      background: #059669; color: #fff; border-color: #059669;
+    }
+    .btn-approve.changes {
+      color: #D97706; border-color: rgba(217,119,6,0.3);
+    }
+    .btn-approve.changes:hover {
+      background: #D97706; color: #fff; border-color: #D97706;
+    }
+    .client-note {
+      font-size: 12px;
+      margin-top: 6px;
+      padding: 7px 10px;
+      background: #FFFBEB;
+      border-radius: 8px;
+      border-left: 3px solid #D97706;
+      color: #92400E;
+    }
+    .pub-link {
+      font-size: 12px; color: var(--brand);
+      text-decoration: none; display: inline-flex;
+      align-items: center; gap: 4px;
+      font-weight: 500;
+    }
+    .pub-link:hover { text-decoration: underline; }
+
+    /* ── FEED SECTION ── */
+    .feed-section { margin-bottom: 52px; }
+
+    .ig-mockup {
+      background: var(--white);
+      border-radius: var(--r-lg);
+      border: 1px solid var(--border-s);
+      box-shadow: var(--sh-m);
+      overflow: hidden;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .ig-profile-bar {
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border-s);
+    }
+    .ig-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      font-size: 16px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ig-handle {
+      font-size: 14px; font-weight: 700;
+      color: var(--t-dark);
+    }
+    .ig-follow-count {
+      font-size: 11px; color: var(--t-soft); margin-top: 1px;
+    }
+
+    .ig-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+    }
+    .ig-cell {
+      aspect-ratio: 1;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+    .ig-cell img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .ig-cell-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px;
+      background: linear-gradient(135deg, var(--bg) 0%, #eee 100%);
+      padding: 8px;
+    }
+    .ig-cell-type {
+      font-size: 9px; font-weight: 600;
+      color: var(--t-soft);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .ig-cell-idea {
+      font-size: 8px; color: var(--t-soft);
+      text-align: center; line-height: 1.3;
+    }
+    .ig-cell-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0);
+      transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ig-cell:hover .ig-cell-overlay { background: rgba(0,0,0,0.12); }
+    .ig-cell-status {
+      position: absolute; top: 4px; right: 4px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .ig-cell-status.ok  { background: #059669; color: #fff; }
+    .ig-cell-status.chg { background: #D97706; color: #fff; }
+
+    /* ── NOTE MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      padding: 24px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: var(--white);
+      border-radius: var(--r-lg);
+      padding: 28px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+    }
+    .modal-title {
+      font-size: 16px; font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .modal-sub {
+      font-size: 13px; color: var(--t-soft);
+      margin-bottom: 18px;
+    }
+    .modal-textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px;
+      font-size: 13px; font-family: inherit;
+      resize: vertical; min-height: 90px;
+      outline: none;
+      background: var(--bg);
+      transition: border-color 0.15s;
+    }
+    .modal-textarea:focus { border-color: var(--brand); }
+    .modal-actions {
+      display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 9px 20px;
+      border-radius: var(--r);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: opacity 0.15s;
+    }
+    .modal-btn:hover { opacity: 0.85; }
+    .modal-btn.cancel { background: var(--bg); color: var(--t-mid); }
+    .modal-btn.confirm { background: var(--brand); color: #fff; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: var(--t-dark); color: #fff;
+      padding: 10px 22px; border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      opacity: 0; transition: opacity 0.2s;
+      pointer-events: none; z-index: 500;
+      white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── EMPTY ── */
+    .empty-state {
+      text-align: center; padding: 60px 24px;
+      color: var(--t-soft);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state .msg { font-size: 14px; }
+
+    /* ── FOOTER ── */
+    .client-footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 11px; color: var(--t-soft);
+      border-top: 1px solid var(--border-s);
+      margin-top: 40px;
+    }
+
+    @media (max-width: 600px) {
+      .page { padding: 20px 16px 60px; }
+      .brand-header-inner { gap: 10px; }
+      .powered-by { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ AUTH GATE ══ -->
+<div id="authGate">
+  <div class="auth-card">
+    <div class="auth-brand-avatar" id="authAvatar">?</div>
+    <div class="auth-title" id="authBrandName">Portal de aprobación</div>
+    <div class="auth-sub" id="authSub">Ingresa el PIN de acceso para continuar</div>
+    <input class="auth-input" type="password" id="pinInput" placeholder="••••"
+           maxlength="8" inputmode="numeric" autocomplete="off"
+           onkeydown="if(event.key==='Enter') submitPin()">
+    <button class="auth-btn" onclick="submitPin()">Acceder →</button>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-no-pin" id="noAuthNote" style="display:none">
+      Este portal no requiere contraseña.
+      <a href="#" onclick="enterApp()" style="color:var(--brand)">Entrar directamente →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <header class="brand-header">
+    <div class="brand-header-inner">
+      <div class="brand-avatar-sm" id="headerAvatar">S</div>
+      <div class="brand-header-name" id="headerName">Marca</div>
+      <div class="brand-header-tag" id="headerHandle">@handle</div>
+      <div class="powered-by">Portal de aprobación</div>
+    </div>
+  </header>
+
+  <div class="page">
+    <!-- Month tabs -->
+    <div class="month-tabs" id="monthTabs"></div>
+
+    <!-- Stats strip -->
+    <div class="stats-strip" id="statsStrip"></div>
+
+    <!-- Content section -->
+    <div>
+      <div class="section-title">📋 Parrilla de contenidos</div>
+      <div class="content-grid" id="contentGrid"></div>
+    </div>
+
+    <!-- Feed section -->
+    <div class="feed-section">
+      <div class="section-title">📱 Feed Instagram</div>
+      <div class="section-sub">Vista previa del orden de publicaciones en el perfil</div>
+      <div class="ig-mockup">
+        <div class="ig-profile-bar">
+          <div class="ig-avatar" id="feedAvatar">S</div>
+          <div>
+            <div class="ig-handle" id="feedHandle">@cuenta</div>
+            <div class="ig-follow-count" id="feedCount">0 publicaciones</div>
+          </div>
+        </div>
+        <div class="ig-grid" id="igGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="client-footer">
+    Vista de aprobación — solo lectura &nbsp;·&nbsp; Generada por tu agencia
+  </div>
+</div>
+
+<!-- ══ NOTE MODAL ══ -->
+<div class="modal-overlay hidden" id="noteModal">
+  <div class="modal-box">
+    <div class="modal-title">⚠️ Solicitar cambios</div>
+    <div class="modal-sub">Describe qué cambios necesitas para este contenido</div>
+    <textarea class="modal-textarea" id="noteInput" placeholder="Ej: Por favor cambiar el texto del CTA, el fondo debe ser blanco..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeNoteModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="confirmChanges()">Enviar solicitud</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────────
+const STORAGE_KEY = 'pal_agency_v3';
+const SESSION_KEY = 'pal_client_auth';
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// ── STATE ──────────────────────────────────────────────────────
+let _brand    = null;
+let _brandId  = null;
+let _month    = null;
+let _pendingChangesId = null;
+
+// ── INIT ───────────────────────────────────────────────────────
+function init() {
+  const params    = new URLSearchParams(location.search);
+  const brandParam = params.get('brand') || '';
+  const keyParam   = params.get('key')   || '';
+
+  const rawState = localStorage.getItem(STORAGE_KEY);
+  if (!rawState) { showError('No hay datos disponibles. Pide a tu agencia el enlace correcto.'); return; }
+
+  let appState;
+  try { appState = JSON.parse(rawState); } catch(e) { showError('Error al cargar datos.'); return; }
+
+  // Find brand by ID or slugified name
+  const brands = Object.values(appState.brands || {});
+  _brand = brands.find(b =>
+    b.id === brandParam ||
+    slugify(b.nombre) === brandParam ||
+    slugify(b.nombre) === slugify(brandParam)
+  );
+
+  if (!_brand) {
+    if (!brandParam) {
+      // No brand param: list available brands (for admin convenience)
+      showBrandSelector(brands);
+    } else {
+      showError('No se encontró la marca especificada.');
+    }
+    return;
+  }
+
+  _brandId = _brand.id;
+
+  // Set CSS brand color
+  document.documentElement.style.setProperty('--brand', _brand.color || '#F45A00');
+
+  // Auth check
+  const pin = _brand.clientPin || '';
+  const sessionAuth = sessionStorage.getItem(SESSION_KEY + '_' + _brandId);
+
+  if (!pin) {
+    // No PIN required
+    document.getElementById('noAuthNote').style.display = 'block';
+    document.getElementById('pinInput').closest('input') && (document.getElementById('pinInput').style.display = 'none');
+    document.querySelector('.auth-btn').style.display = 'none';
+    document.getElementById('pinInput').style.display = 'none';
+    document.querySelector('.auth-btn').style.display = 'none';
+  }
+
+  // If key in URL matches, auto-auth
+  if (pin && keyParam === pin) {
+    sessionStorage.setItem(SESSION_KEY + '_' + _brandId, '1');
+    enterApp();
+    return;
+  }
+
+  // If already authenticated this session
+  if (sessionAuth) { enterApp(); return; }
+
+  // If no PIN, enter directly
+  if (!pin) { enterApp(); return; }
+
+  // Show auth gate
+  document.getElementById('authAvatar').textContent = _brand.nombre.charAt(0).toUpperCase();
+  document.getElementById('authAvatar').style.background = _brand.color || '#F45A00';
+  document.getElementById('authBrandName').textContent = _brand.nombre;
+  document.getElementById('authSub').textContent = 'Ingresa el PIN que te compartió tu agencia';
+}
+
+function submitPin() {
+  const input = document.getElementById('pinInput');
+  const pin   = _brand.clientPin || '';
+  if (input.value.trim() === pin) {
+    sessionStorage.setItem(SESSION_KEY + '_' + _brandId, '1');
+    enterApp();
+  } else {
+    input.classList.add('error');
+    document.getElementById('authError').textContent = 'PIN incorrecto. Inténtalo de nuevo.';
+    setTimeout(() => input.classList.remove('error'), 400);
+    input.value = '';
+    input.focus();
+  }
+}
+
+function enterApp() {
+  document.getElementById('authGate').classList.add('hidden');
+  document.getElementById('app').style.display = 'block';
+  renderApp();
+}
+
+// ── RENDER APP ─────────────────────────────────────────────────
+function renderApp() {
+  // Header
+  document.getElementById('headerAvatar').textContent = _brand.nombre.charAt(0).toUpperCase();
+  document.getElementById('headerAvatar').style.background = _brand.color || '#F45A00';
+  document.getElementById('headerName').textContent = _brand.nombre;
+  document.getElementById('headerHandle').textContent = _brand.igHandle || '';
+  document.title = `${_brand.nombre} — Portal de aprobación`;
+
+  // Detect available months from contenidos
+  const allMonths = [...new Set((_brand.contenidos || []).map(c => c.mes))];
+  const orderedMonths = MONTHS.filter(m => allMonths.includes(m));
+
+  // Default to first available month or current
+  if (!_month) {
+    const rawState = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    _month = rawState.currentMonth || orderedMonths[0] || 'Marzo';
+    if (!orderedMonths.includes(_month)) _month = orderedMonths[0] || _month;
+  }
+
+  renderMonthTabs(orderedMonths);
+  renderMonth();
+}
+
+function renderMonthTabs(months) {
+  const tabs = document.getElementById('monthTabs');
+  tabs.innerHTML = months.map(m => `
+    <button class="month-tab ${m === _month ? 'active' : ''}" onclick="selectMonth('${m}')">${m}</button>
+  `).join('');
+}
+
+function selectMonth(m) {
+  _month = m;
+  document.querySelectorAll('.month-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.trim() === m);
+  });
+  renderMonth();
+}
+
+function renderMonth() {
+  const cs = (_brand.contenidos || []).filter(c => c.mes === _month);
+  renderStats(cs);
+  renderContentCards(cs);
+  renderFeed();
+}
+
+// ── STATS ──────────────────────────────────────────────────────
+function renderStats(cs) {
+  const pub     = cs.filter(c => c.estado === 'Publicado').length;
+  const pendApr = cs.filter(c => !c.clientAprobo || c.clientAprobo === '').length;
+  const approved= cs.filter(c => c.clientAprobo === 'Sí').length;
+  const cambios = cs.filter(c => c.clientAprobo === 'Cambios').length;
+
+  document.getElementById('statsStrip').innerHTML = `
+    <div class="stat-pill">
+      <span class="stat-dot" style="background:#64748B"></span>
+      <span class="stat-pill-val">${cs.length}</span>
+      <span class="stat-pill-lbl">contenidos</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-dot" style="background:#059669"></span>
+      <span class="stat-pill-val">${pub}</span>
+      <span class="stat-pill-lbl">publicados</span>
+    </div>
+    ${pendApr > 0 ? `
+    <div class="stat-pill">
+      <span class="stat-dot" style="background:#D97706"></span>
+      <span class="stat-pill-val">${pendApr}</span>
+      <span class="stat-pill-lbl">pendientes aprobación</span>
+    </div>` : ''}
+    ${approved > 0 ? `
+    <div class="stat-pill">
+      <span class="stat-dot" style="background:#059669"></span>
+      <span class="stat-pill-val">${approved}</span>
+      <span class="stat-pill-lbl">aprobados</span>
+    </div>` : ''}
+    ${cambios > 0 ? `
+    <div class="stat-pill">
+      <span class="stat-dot" style="background:#DC2626"></span>
+      <span class="stat-pill-val">${cambios}</span>
+      <span class="stat-pill-lbl">con cambios solicitados</span>
+    </div>` : ''}
+  `;
+}
+
+// ── CONTENT CARDS ──────────────────────────────────────────────
+function renderContentCards(cs) {
+  const grid = document.getElementById('contentGrid');
+  if (!cs.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div class="msg">Sin contenidos para este mes</div></div>`;
+    return;
+  }
+
+  const sorted = [...cs].sort((a,b) => {
+    const da = a.ig?.fecha || a.tk?.fecha || a.fechaAprobacion || '';
+    const db = b.ig?.fecha || b.tk?.fecha || b.fechaAprobacion || '';
+    return da.localeCompare(db);
+  });
+
+  grid.innerHTML = sorted.map(c => {
+    const isPub    = c.estado === 'Publicado';
+    const fecha    = c.ig?.fecha || c.tk?.fecha || c.fechaAprobacion || '';
+    const igPub    = c.ig?.publicado === 'Sí';
+    const tkPub    = c.tk?.publicado === 'Sí';
+    const fbPub    = c.fb?.publicado === 'Sí';
+    const igLink   = c.ig?.link;
+    const tkLink   = c.tk?.link;
+
+    const barCls   = c.clientAprobo === 'Sí' ? 'approved'
+                   : c.clientAprobo === 'Cambios' ? 'rejected'
+                   : isPub ? 'published' : 'unpub';
+
+    const approvalUI = renderApprovalRow(c);
+
+    const obsHtml = c.obs ? `<div class="content-obs">💬 ${esc(c.obs)}</div>` : '';
+    const noteHtml = c.clientNota ? `<div class="client-note">⚠️ Cambios solicitados: ${esc(c.clientNota)}</div>` : '';
+    const linksHtml = (igLink || tkLink) ? `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;">
+        ${igLink ? `<a class="pub-link" href="${esc(igLink)}" target="_blank">📸 Ver en Instagram ↗</a>` : ''}
+        ${tkLink ? `<a class="pub-link" href="${esc(tkLink)}" target="_blank">🎵 Ver en TikTok ↗</a>` : ''}
+      </div>` : '';
+
+    return `
+    <div class="content-card" id="card-${c.id}">
+      <div class="content-card-bar ${barCls}"></div>
+      <div class="content-card-body">
+        <div class="content-card-row1">
+          <span class="type-badge">${c.tipo || 'Reel'}</span>
+          ${fecha ? `<span class="date-chip">📅 ${fmtDate(fecha)}</span>` : ''}
+          ${igPub||c.plataformas?.includes('instagram')||true ? `<span class="plat-chip ig">IG</span>` : ''}
+          ${c.plataformas?.includes('tiktok') ? `<span class="plat-chip tk">TK</span>` : ''}
+          ${c.plataformas?.includes('facebook') ? `<span class="plat-chip fb">FB</span>` : ''}
+          <span style="margin-left:auto;">${estadoBadgeHtml(c.estado)}</span>
+        </div>
+        <div class="content-idea">${esc(c.idea || '—')}</div>
+        ${obsHtml}
+        ${linksHtml}
+        <div class="approval-row">${approvalUI}</div>
+        ${noteHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderApprovalRow(c) {
+  if (c.estado === 'Publicado') {
+    if (c.clientAprobo === 'Sí') {
+      return `<span class="approval-status approved">✓ Aprobado</span>
+              <button class="btn-approve changes" onclick="requestChanges('${c.id}')">⚠ Solicitar cambios</button>`;
+    }
+    if (c.clientAprobo === 'Cambios') {
+      return `<span class="approval-status cambios">⚠ Cambios solicitados</span>
+              <button class="btn-approve approve" onclick="approveContent('${c.id}')">✓ Aprobar igualmente</button>`;
+    }
+    return `<button class="btn-approve approve" onclick="approveContent('${c.id}')">✓ Aprobar</button>
+            <button class="btn-approve changes" onclick="requestChanges('${c.id}')">⚠ Solicitar cambios</button>`;
+  }
+  // Not published yet — can still pre-approve
+  if (c.clientAprobo === 'Sí') {
+    return `<span class="approval-status approved">✓ Pre-aprobado</span>
+            <button class="btn-approve changes" onclick="requestChanges('${c.id}')">⚠ Solicitar cambios</button>`;
+  }
+  if (c.clientAprobo === 'Cambios') {
+    return `<span class="approval-status cambios">⚠ Cambios solicitados</span>
+            <button class="btn-approve approve" onclick="approveContent('${c.id}')">✓ Aprobar</button>`;
+  }
+  return `<button class="btn-approve approve" onclick="approveContent('${c.id}')">✓ Pre-aprobar</button>
+          <button class="btn-approve changes" onclick="requestChanges('${c.id}')">⚠ Solicitar cambios</button>`;
+}
+
+// ── APPROVALS ──────────────────────────────────────────────────
+function approveContent(id) {
+  writeApproval(id, 'Sí', '');
+  showToast('✓ Contenido aprobado');
+}
+
+function requestChanges(id) {
+  _pendingChangesId = id;
+  document.getElementById('noteInput').value = '';
+  document.getElementById('noteModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('noteInput').focus(), 80);
+}
+
+function closeNoteModal() {
+  document.getElementById('noteModal').classList.add('hidden');
+  _pendingChangesId = null;
+}
+
+function confirmChanges() {
+  const note = document.getElementById('noteInput').value.trim();
+  writeApproval(_pendingChangesId, 'Cambios', note);
+  closeNoteModal();
+  showToast('⚠️ Cambios solicitados enviados');
+}
+
+function writeApproval(id, status, note) {
+  // Read fresh state, update, write back
+  const rawState = localStorage.getItem(STORAGE_KEY);
+  if (!rawState) return;
+  try {
+    const appState = JSON.parse(rawState);
+    const brand = appState.brands[_brandId];
+    if (!brand) return;
+    const c = brand.contenidos.find(x => x.id === id);
+    if (!c) return;
+    c.clientAprobo = status;
+    c.clientNota   = note || '';
+    if (status === 'Sí') c.clientNota = '';
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    // Re-read brand from updated state (keep reference fresh)
+    _brand = appState.brands[_brandId];
+    // Re-render current month
+    renderMonth();
+  } catch(e) { showToast('Error al guardar', 'error'); }
+}
+
+// ── FEED PREVIEW ───────────────────────────────────────────────
+function renderFeed() {
+  const igPub = (_brand.contenidos || []).filter(c =>
+    c.ig?.publicado === 'Sí' || c.estado === 'Publicado'
+  );
+
+  // Use feed order if available
+  let ordered = igPub;
+  if (_brand.feed?.order?.length) {
+    const orderMap = {};
+    _brand.feed.order.forEach((id, i) => { orderMap[id] = i; });
+    ordered = [...igPub].sort((a,b) => (orderMap[a.id] ?? 999) - (orderMap[b.id] ?? 999));
+  }
+
+  const displayItems = ordered.slice(0, 12); // max 12 for preview
+
+  document.getElementById('feedAvatar').textContent = _brand.nombre.charAt(0).toUpperCase();
+  document.getElementById('feedAvatar').style.background = _brand.color || '#F45A00';
+  document.getElementById('feedHandle').textContent = _brand.igHandle || '@cuenta';
+  document.getElementById('feedCount').textContent = `${igPub.length} publicaciones`;
+
+  const grid = document.getElementById('igGrid');
+  if (!displayItems.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:#999;font-size:13px;">Sin publicaciones para mostrar</div>`;
+    return;
+  }
+
+  grid.innerHTML = displayItems.map(c => {
+    const aprStatus = c.clientAprobo === 'Sí' ? `<div class="ig-cell-status ok">✓</div>`
+                    : c.clientAprobo === 'Cambios' ? `<div class="ig-cell-status chg">!</div>` : '';
+    const inner = c._feedImg
+      ? `<img src="${c._feedImg}" alt="${esc(c.idea)}" loading="lazy">`
+      : `<div class="ig-cell-placeholder">
+           <span style="font-size:18px;">${c.tipo === 'Carrusel' ? '🖼' : '🎬'}</span>
+           <span class="ig-cell-type">${c.tipo || 'Reel'}</span>
+           <span class="ig-cell-idea">${esc(trunc(c.idea, 24))}</span>
+         </div>`;
+    return `<div class="ig-cell">${inner}<div class="ig-cell-overlay"></div>${aprStatus}</div>`;
+  }).join('');
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function slugify(str) {
+  return (str || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function trunc(s, n) {
+  if (!s) return '';
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function estadoBadgeHtml(estado) {
+  const map = {
+    'Publicado':     '#059669',
+    'No publicado':  '#DC2626',
+    'Grabado':       '#7C3AED',
+    'En edición':    '#D97706',
+    'En aprobación': '#2563EB',
+    'Guion':         '#EA580C',
+    'Idea':          '#94A3B8',
+  };
+  const color = map[estado] || '#94A3B8';
+  return `<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;
+    background:${color}18;color:${color};border:1px solid ${color}28;">${estado || '—'}</span>`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showError(msg) {
+  document.getElementById('authGate').innerHTML = `
+    <div class="auth-card">
+      <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
+      <div class="auth-title">Error</div>
+      <div class="auth-sub">${msg}</div>
+    </div>`;
+}
+
+function showBrandSelector(brands) {
+  document.getElementById('authGate').innerHTML = `
+    <div class="auth-card" style="max-width:480px;">
+      <div style="font-size:36px;margin-bottom:16px;">🔗</div>
+      <div class="auth-title">Selecciona una marca</div>
+      <div class="auth-sub" style="margin-bottom:24px;">Accede mediante el enlace específico de tu marca</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${brands.map(b => `
+          <a href="?brand=${b.id}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+            background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.08);
+            text-decoration:none;color:inherit;transition:box-shadow 0.15s;"
+            onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'"
+            onmouseout="this.style.boxShadow='none'">
+            <div style="width:40px;height:40px;border-radius:12px;background:${b.color||'#F45A00'};
+              color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;
+              flex-shrink:0;">${b.nombre.charAt(0)}</div>
+            <div>
+              <div style="font-weight:700;font-size:14px;">${b.nombre}</div>
+              <div style="font-size:12px;color:#999;">${b.sector || ''}</div>
+            </div>
+          </a>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── START ──────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

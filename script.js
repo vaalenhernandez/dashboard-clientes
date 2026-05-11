@@ -168,6 +168,7 @@ function load() {
         if (!b.contractual) b.contractual = {};
         if (!b.feed)        b.feed        = { order: [], approved: false, approvedDate: '' };
         if (!Array.isArray(b.plataformas)) b.plataformas = ['instagram'];
+        if (b.clientPin === undefined) b.clientPin = '';
         // Per-contenido: ensure platform sub-objects exist
         b.contenidos.forEach(c => {
           if (!c.ig) c.ig = { publicado: 'No', fecha: '', link: '' };
@@ -200,6 +201,7 @@ function mkBrand(id, nombre, sector, color, ig, tk, fb, plats, minPub, idealPub,
     plataformas: plats,
     minPub, idealPub, histMeta,
     requireMeeting: true, requireReport: true,
+    clientPin: '',
     contenidos: [], ideas: [], grabaciones: [],
     contractual: {},
     stats: {},
@@ -377,6 +379,7 @@ function openNuevaMarca(id = null) {
   g('mMinPub', b?.minPub??8); g('mIdealPub', b?.idealPub??12); g('mHistMeta', b?.histMeta??12);
   document.getElementById('mRequireMeeting').value = String(b?.requireMeeting??true);
   document.getElementById('mRequireReport').value  = String(b?.requireReport??true);
+  g('mClientPin', b?.clientPin);
   openModal('modal-marca');
 }
 
@@ -406,6 +409,7 @@ function saveMarca() {
       +document.getElementById('mHistMeta').value||12),
     requireMeeting: document.getElementById('mRequireMeeting').value==='true',
     requireReport:  document.getElementById('mRequireReport').value==='true',
+    clientPin: (document.getElementById('mClientPin')?.value || existing.clientPin || '').trim(),
     // preserve data
     contenidos: existing.contenidos||[],
     ideas:      existing.ideas||[],
@@ -833,12 +837,17 @@ function renderParrilla() {
   }
   tbody.innerHTML = data.map((c,i) => {
     const fechaPub = c.ig?.fecha || c.tk?.fecha || '';
+    const clientBadge = c.clientAprobo === 'Sí'
+      ? `<span title="Aprobado por cliente" style="font-size:11px;color:#059669;font-weight:600;">✓ Cliente</span>`
+      : c.clientAprobo === 'Cambios'
+      ? `<span title="${c.clientNota||'Cambios solicitados'}" style="font-size:11px;color:#D97706;font-weight:600;cursor:help;">⚠ Cambios</span>`
+      : '';
     return `
     <tr>
       <td>${i+1}</td>
       <td>${c.mes}</td>
       <td>${c.tipo}</td>
-      <td title="${c.idea}">${trunc(c.idea,35)}</td>
+      <td title="${c.idea}">${trunc(c.idea,35)}${clientBadge ? '<br>'+clientBadge : ''}</td>
       <td>${c.objetivo||'—'}</td>
       <td>${estadoBadge(c.estado)}</td>
       <td>${platCell(c,'ig')}</td>
@@ -1575,6 +1584,22 @@ function renderConfiguracion() {
       </div>
       <button class="btn-primary" style="margin-top:16px;" onclick="openNuevaMarca()">+ Nueva marca</button>
     </div>
+    <div class="card" style="background:linear-gradient(135deg,var(--orange-bg) 0%,var(--white) 100%);border-color:var(--orange-border);">
+      <h3 class="card-title" style="color:var(--orange);">🔗 Vista cliente</h3>
+      <p style="font-size:13px;color:var(--t-mid);margin:8px 0 16px;">Comparte este enlace con ${b.nombre} para que puedan ver y aprobar el contenido.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${Object.values(state.brands).map(br=>`
+          <div style="display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border-s);border-radius:var(--r-md);padding:10px 14px;flex-wrap:wrap;gap:8px;">
+            <div style="width:28px;height:28px;border-radius:8px;background:${br.color};color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${br.nombre.charAt(0)}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:13px;">${br.nombre}</div>
+              <code style="font-size:11px;color:var(--t-soft);">client.html?brand=${br.id}${br.clientPin?`&key=${br.clientPin}`:''}</code>
+            </div>
+            <button class="btn-primary" style="padding:6px 14px;font-size:12px;" onclick="copyClientLink('${br.id}')">Copiar link</button>
+            <a href="client.html?brand=${br.id}${br.clientPin?`&key=${br.clientPin}`:''}" target="_blank" class="btn-ghost" style="padding:6px 14px;font-size:12px;text-decoration:none;">Previsualizar ↗</a>
+          </div>`).join('')}
+      </div>
+    </div>
     <div class="card">
       <h3 class="card-title">Configuración de ${b.nombre}</h3>
       <div class="form-grid-3" style="margin-top:16px;">
@@ -1592,6 +1617,17 @@ function renderConfiguracion() {
       </div>
       <button class="btn-primary" style="margin-top:12px;" onclick="saveConfig()">Guardar configuración</button>
     </div>`;
+}
+
+function copyClientLink(brandId) {
+  const b = state.brands[brandId];
+  if (!b) return;
+  const base = location.origin + location.pathname.replace('index.html','').replace(/\/?$/, '/');
+  const url  = `${base}client.html?brand=${b.id}${b.clientPin ? `&key=${b.clientPin}` : ''}`;
+  navigator.clipboard.writeText(url).then(
+    () => showToast('Link copiado ✓'),
+    () => { prompt('Copia este enlace:', url); }
+  );
 }
 
 function saveConfig() {
