@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
 
@@ -205,10 +205,11 @@
       </div>
       <div class="feed-header-actions">
         <div class="toggle-group">
-          <button class="toggle-btn active" id="btnGridView"  onclick="setFeedView('grid')">⊞ Grid View</button>
-          <button class="toggle-btn"        id="btnPhoneView" onclick="setFeedView('phone')">📱 Vista Celular</button>
+          <button class="toggle-btn active" id="btnGridView"  onclick="setFeedView('grid')">⊞ Grid</button>
+          <button class="toggle-btn"        id="btnPhoneView" onclick="setFeedView('phone')">📱 Celular</button>
         </div>
-        <button class="btn-secondary" onclick="markFeedApproved()">Marcar feed aprobado</button>
+        <button class="btn-secondary" onclick="addFeedSlot()">+ Agregar casilla</button>
+        <button class="btn-secondary" onclick="markFeedApproved()">✓ Aprobar feed</button>
       </div>
     </div>
     <div class="feed-approval-bar" id="feedApprovalBar"></div>

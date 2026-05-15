@@ -171,6 +171,7 @@ function load() {
         if (b.clientPin === undefined)          b.clientPin = '';
         if (!Array.isArray(b.clientHiddenMonths)) b.clientHiddenMonths = [];
         if (!Array.isArray(b.clientHiddenPlats))  b.clientHiddenPlats  = [];
+        if (!b.feedByMonth || typeof b.feedByMonth !== 'object') b.feedByMonth = {};
         // Per-contenido: ensure platform sub-objects exist
         b.contenidos.forEach(c => {
           if (!c.ig) c.ig = { publicado: 'No', fecha: '', link: '' };
@@ -212,12 +213,13 @@ function mkBrand(id, nombre, sector, color, ig, tk, fb, plats, minPub, idealPub,
     minPub, idealPub, histMeta,
     requireMeeting: true, requireReport: true,
     clientPin: '',
-    clientHiddenMonths: [],   // months hidden from client view ([] = all visible)
-    clientHiddenPlats:  [],   // platforms hidden from client view ([] = all visible)
+    clientHiddenMonths: [],
+    clientHiddenPlats:  [],
     contenidos: [], ideas: [], grabaciones: [],
     contractual: {},
     stats: {},
-    feed: { order: [], approved: false, approvedDate: '' }
+    feed: { order: [], approved: false, approvedDate: '' }, // legacy – kept for compat
+    feedByMonth: {}   // per-month feed: { 'YYYY-MM': { slots:[], approved:false, approvedDate:'' } }
   };
 }
 
@@ -1183,112 +1185,196 @@ function saveStats() {
   renderEstadisticas();
 }
 
-// ── FEED IG ───────────────────────────────────────────────────
+// ── FEED IG — PER-MONTH SYSTEM ────────────────────────────────
+const MONTH_NUMS = {
+  'Enero':'01','Febrero':'02','Marzo':'03','Abril':'04',
+  'Mayo':'05','Junio':'06','Julio':'07','Agosto':'08',
+  'Septiembre':'09','Octubre':'10','Noviembre':'11','Diciembre':'12'
+};
+
+/** Returns the 'YYYY-MM' key for the current brand+month */
+function getMonthKey() {
+  const b   = currentBrand();
+  const m   = state.currentMonth;
+  const num = MONTH_NUMS[m];
+  if (!num) return null;
+  // Infer year from contenido dates (fallback to current year)
+  const dates = b.contenidos
+    .filter(c => c.mes === m)
+    .flatMap(c => [c.ig?.fecha, c.tk?.fecha].filter(Boolean));
+  const year = dates.length ? dates[0].split('-')[0] : new Date().getFullYear();
+  return `${year}-${num}`;
+}
+
+/** Returns (or auto-creates) the feed data for the current month */
+function getFeedMonthData() {
+  const b   = currentBrand();
+  const key = getMonthKey();
+  if (!key) return null;
+  if (!b.feedByMonth) b.feedByMonth = {};
+  if (!b.feedByMonth[key]) {
+    // Auto-populate slots from this month's published/pendiente contenidos
+    const published = b.contenidos.filter(c =>
+      c.mes === state.currentMonth &&
+      (c.ig?.publicado === 'Sí' || c.ig?.publicado === 'Pendiente')
+    );
+    b.feedByMonth[key] = {
+      slots: published.map(c => ({
+        id: uid(),
+        contenidoId: c.id,
+        img: c._feedImg || null   // copy existing legacy image if any
+      })),
+      approved: false,
+      approvedDate: ''
+    };
+  }
+  return b.feedByMonth[key];
+}
+
 function renderFeed() {
-  const b = currentBrand();
-  document.getElementById('feedBrandMonth').textContent = `${b.nombre} — Feed Instagram`;
-  document.getElementById('igHandle').textContent = b.igHandle||'@cuenta';
+  const b  = currentBrand();
+  const fd = getFeedMonthData();
+  if (!fd) return;
 
-  const igPub = b.contenidos.filter(c=>c.ig?.publicado==='Sí'||c.ig?.publicado==='Pendiente');
-  if (!b.feed.order.length || b.feed.order.some(id=>!igPub.find(c=>c.id===id))) {
-    b.feed.order = igPub.map(c=>c.id);
+  document.getElementById('feedBrandMonth').textContent =
+    `${b.nombre} — ${state.currentMonth} — Feed Instagram`;
+
+  // Phone header
+  const picEl = document.getElementById('igProfilePic');
+  if (picEl) {
+    picEl.textContent = b.nombre.charAt(0).toUpperCase();
+    picEl.style.background = b.color || 'var(--orange)';
   }
-  const ordered = b.feed.order.map(id=>igPub.find(c=>c.id===id)).filter(Boolean);
+  const handleEl = document.getElementById('igHandle');
+  if (handleEl) handleEl.textContent = b.igHandle || '@cuenta';
 
-  const ap = b.feed;
+  // Approval bar
   const apBar = document.getElementById('feedApprovalBar');
-  if (ap.approved) {
-    apBar.innerHTML = `<span style="color:#27AE60;font-weight:600;">✅ Feed aprobado por cliente el ${fmt(ap.approvedDate)}</span>`;
-    apBar.style.display='block';
+  if (fd.approved) {
+    apBar.innerHTML = `<span style="color:#27AE60;font-weight:600;">✅ Feed aprobado por cliente el ${fmt(fd.approvedDate)}</span>`;
+    apBar.style.display = 'block';
+  } else { apBar.style.display = 'none'; }
+
+  // ── Grid view ──
+  const feedGrid = document.getElementById('feedGrid');
+  if (!fd.slots.length) {
+    feedGrid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--t-soft);">
+      Sin casillas en este mes. Usa <strong>"+ Agregar casilla"</strong> para comenzar.
+    </div>`;
   } else {
-    apBar.style.display='none';
+    feedGrid.innerHTML = fd.slots.map((slot, i) => {
+      const c   = slot.contenidoId ? b.contenidos.find(x => x.id === slot.contenidoId) : null;
+      const img = slot.img || null;
+      return `<div class="feed-cell" draggable="true" data-idx="${i}"
+          ondragstart="onFeedDragStart(event,${i})"
+          ondragover="onFeedDragOver(event)"
+          ondrop="onFeedDrop(event,${i})"
+          ondragend="onFeedDragEnd()">
+          ${img ? `
+            <div class="feed-cell-img-wrap">
+              <img src="${img}" alt="${c ? trunc(c.idea,40) : 'imagen'}" />
+              <div class="feed-img-actions">
+                <label class="feed-img-btn" title="Reemplazar imagen">
+                  🔄<input type="file" accept="image/*" onchange="uploadFeedImage(event,'${slot.id}')" />
+                </label>
+                <button class="feed-img-btn" title="Eliminar imagen" onclick="deleteFeedImage('${slot.id}')">🗑</button>
+              </div>
+            </div>` : `
+            <div class="feed-cell-placeholder">
+              ${c ? `<span>${c.tipo}</span><small>${trunc(c.idea,28)}</small>` : '<small style="color:var(--t-muted);">Casilla vacía</small>'}
+              <label class="feed-upload-btn">📷 Imagen
+                <input type="file" accept="image/*" onchange="uploadFeedImage(event,'${slot.id}')" />
+              </label>
+            </div>`}
+          <div class="feed-cell-num">${i + 1}</div>
+          <button class="feed-slot-del" onclick="removeFeedSlot('${slot.id}')" title="Eliminar casilla">×</button>
+        </div>`;
+    }).join('');
   }
 
-  // Grid view
-  const feedGrid = document.getElementById('feedGrid');
-  feedGrid.innerHTML = ordered.length ? ordered.map((c,i)=>`
-    <div class="feed-cell" draggable="true" data-id="${c.id}" data-idx="${i}"
-      ondragstart="onFeedDragStart(event,${i})"
-      ondragover="onFeedDragOver(event)"
-      ondrop="onFeedDrop(event,${i})"
-      ondragend="onFeedDragEnd()">
-      ${c._feedImg ? `
-        <div class="feed-cell-img-wrap">
-          <img src="${c._feedImg}" alt="${c.idea}" />
-          <div class="feed-img-actions">
-            <label class="feed-img-btn" title="Reemplazar imagen">
-              🔄<input type="file" accept="image/*" onchange="uploadFeedImage(event,'${c.id}')" />
-            </label>
-            <button class="feed-img-btn" title="Eliminar imagen" onclick="deleteFeedImage('${c.id}')">🗑</button>
-          </div>
-        </div>` : `
-        <div class="feed-cell-placeholder">
-          <span>${c.tipo}</span>
-          <small>${trunc(c.idea,30)}</small>
-          <label class="feed-upload-btn">📷 Imagen
-            <input type="file" accept="image/*" onchange="uploadFeedImage(event,'${c.id}')" />
-          </label>
-        </div>`}
-      <div class="feed-cell-num">${i+1}</div>
-    </div>`).join('')
-    : `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">No hay contenidos publicados en Instagram para este mes.</div>`;
+  // Feed legend
+  const legend = document.getElementById('feedLegend');
+  if (legend) legend.innerHTML = fd.slots.length
+    ? `<span style="font-size:12px;color:var(--t-soft);">${fd.slots.length} casilla${fd.slots.length!==1?'s':''} · Arrastra para reordenar</span>`
+    : '';
 
-  // Phone view
-  document.getElementById('feedGridPhone').innerHTML = ordered.map(c=>
-    c._feedImg?`<img src="${c._feedImg}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />`
-    :`<div style="background:#f0e8df;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:9px;color:#aaa;text-align:center;padding:4px;">${trunc(c.idea,18)}</div>`
-  ).join('');
+  // ── Phone view ──
+  document.getElementById('feedGridPhone').innerHTML = fd.slots.map(slot => {
+    const img = slot.img;
+    const c   = slot.contenidoId ? b.contenidos.find(x => x.id === slot.contenidoId) : null;
+    return img
+      ? `<img src="${img}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />`
+      : `<div style="background:var(--bg-2);aspect-ratio:1;display:flex;align-items:center;
+           justify-content:center;font-size:9px;color:var(--t-soft);text-align:center;padding:4px;">
+           ${c ? trunc(c.idea, 16) : '—'}</div>`;
+  }).join('');
 }
 
 function setFeedView(view) {
-  document.getElementById('feedGridView').style.display  = view==='grid'?'':'none';
-  document.getElementById('feedPhoneView').style.display = view==='phone'?'':'none';
-  document.getElementById('btnGridView').classList.toggle('active',  view==='grid');
-  document.getElementById('btnPhoneView').classList.toggle('active', view==='phone');
+  document.getElementById('feedGridView').style.display  = view === 'grid'  ? 'block' : 'none';
+  document.getElementById('feedPhoneView').style.display = view === 'phone' ? 'block' : 'none';
+  document.getElementById('btnGridView').classList.toggle('active',  view === 'grid');
+  document.getElementById('btnPhoneView').classList.toggle('active', view === 'phone');
 }
 
 function markFeedApproved() {
-  const b = currentBrand();
-  b.feed.approved = true;
-  b.feed.approvedDate = new Date().toISOString().split('T')[0];
+  const fd = getFeedMonthData();
+  if (!fd) return;
+  fd.approved = true;
+  fd.approvedDate = new Date().toISOString().split('T')[0];
   save(); renderFeed();
   showToast('Feed marcado como aprobado ✓');
 }
 
+function addFeedSlot() {
+  const fd = getFeedMonthData();
+  if (!fd) return;
+  fd.slots.push({ id: uid(), contenidoId: null, img: null });
+  save(); renderFeed();
+}
+
+function removeFeedSlot(slotId) {
+  const b  = currentBrand();
+  const fd = getFeedMonthData();
+  if (!fd) return;
+  fd.slots = fd.slots.filter(s => s.id !== slotId);
+  save(); renderFeed();
+}
+
 function onFeedDragStart(e, idx) {
   _dragSrcIdx = idx;
-  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.effectAllowed = 'move';
 }
-function onFeedDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+function onFeedDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
 function onFeedDrop(e, toIdx) {
   e.preventDefault();
-  if (_dragSrcIdx===null || _dragSrcIdx===toIdx) return;
-  const b = currentBrand();
-  const arr = [...b.feed.order];
-  const [moved] = arr.splice(_dragSrcIdx,1);
-  arr.splice(toIdx,0,moved);
-  b.feed.order = arr;
+  if (_dragSrcIdx === null || _dragSrcIdx === toIdx) return;
+  const fd = getFeedMonthData();
+  if (!fd) return;
+  const arr = [...fd.slots];
+  const [moved] = arr.splice(_dragSrcIdx, 1);
+  arr.splice(toIdx, 0, moved);
+  fd.slots = arr;
   _dragSrcIdx = null;
   save(); renderFeed();
 }
 function onFeedDragEnd() { _dragSrcIdx = null; }
 
-async function uploadFeedImage(e, contenidoId) {
+async function uploadFeedImage(e, slotId) {
   const file = e.target.files[0];
   if (!file) return;
-  const b = currentBrand();
+  const fd  = getFeedMonthData();
   const dataUrl = await resizeImage(file, 800, 800, 0.85);
-  const c = b.contenidos.find(x=>x.id===contenidoId);
-  if (c) { c._feedImg = dataUrl; save(); renderFeed(); }
+  const slot = fd?.slots.find(s => s.id === slotId);
+  if (slot) { slot.img = dataUrl; save(); renderFeed(); }
 }
 
-function deleteFeedImage(contenidoId) {
-  const b = currentBrand();
-  const c = b.contenidos.find(x=>x.id===contenidoId);
-  if (!c) return;
-  delete c._feedImg;
-  save();
-  renderFeed();
+function deleteFeedImage(slotId) {
+  const fd   = getFeedMonthData();
+  const slot = fd?.slots.find(s => s.id === slotId);
+  if (!slot) return;
+  slot.img = null;
+  save(); renderFeed();
   showToast('Imagen eliminada');
 }
 

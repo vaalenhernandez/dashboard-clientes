@@ -1204,26 +1204,63 @@ html, body {
   display: flex; align-items: center; justify-content: center;
 }
 
+.phone-mockup-wrap {
+  display: flex; justify-content: center;
+  padding: 24px 0;
+}
 .phone-mockup {
-  width: 180px;
+  width: 200px;
   background: #1A1A1A;
-  border-radius: 28px;
+  border-radius: 32px;
   padding: 10px;
-  margin: 0 auto;
   box-shadow: var(--sh-l);
 }
 .phone-screen {
   background: var(--white);
-  border-radius: 20px;
+  border-radius: 22px;
   overflow: hidden;
 }
-.phone-feed-row {
+.ig-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.ig-profile-pic {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--orange);
+  color: #fff; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ig-handle {
+  font-size: 10px; font-weight: 700;
+  color: #111; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.feed-grid-phone {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
+  background: rgba(0,0,0,0.06);
 }
+.phone-feed-row { display: none; } /* legacy, unused */
 #feedPhoneView { display: none; }
 #feedGridView  { display: block; }
+
+/* Feed slot delete button */
+.feed-slot-del {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(220,38,38,0.85);
+  color: #fff; font-size: 11px; font-weight: 700;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s;
+  z-index: 2;
+  line-height: 1;
+}
+.feed-cell:hover .feed-slot-del { opacity: 1; }
 
 /* ══════════════════════════════════════════════
    STATS SUMMARY GRID
