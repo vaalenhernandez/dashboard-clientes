@@ -86,8 +86,19 @@ function doPost(e) {
 
 // ── HELPERS ──────────────────────────────────────────────────
 function getOrCreateSheet() {
-  const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  let   sheet = ss.getSheetByName(SHEET_NAME);
+  const props = PropertiesService.getScriptProperties();
+  let ssId = props.getProperty('SPREADSHEET_ID');
+  let ss;
+
+  if (ssId) {
+    try { ss = SpreadsheetApp.openById(ssId); } catch(e) { ssId = null; }
+  }
+  if (!ssId) {
+    ss = SpreadsheetApp.create('Palpitare ClientData');
+    props.setProperty('SPREADSHEET_ID', ss.getId());
+  }
+
+  let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.getRange(1, 1, 1, 4).setValues([['brandId', 'brandName', 'data', 'updatedAt']]);
