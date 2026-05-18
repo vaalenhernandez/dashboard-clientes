@@ -2283,8 +2283,14 @@ async function syncBrandToCloud() {
     const payload = _buildBrandPayload(brandId);
     if (!payload) continue;
     try {
-      await _formPost(url, payload);
-      ok++;
+      const params = new URLSearchParams({
+        action: 'save',
+        brand: brandId,
+        payload: JSON.stringify(payload.data)
+      });
+      const res  = await fetch(url + '?' + params.toString());
+      const json = await res.json();
+      if (json.ok) ok++; else { console.error('[sync]', brandId, json.error); fail++; }
     } catch(e) { console.error('[sync] Error en', brandId, e); fail++; }
   }
 

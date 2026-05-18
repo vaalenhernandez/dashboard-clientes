@@ -19,15 +19,26 @@
 
 const SHEET_NAME = 'ClientData';
 
-// ── LEER datos (client.html los lee aquí) ────────────────────
+// ── TODO pasa por doGet (GET evita problemas de CORS/redirect) ─
 function doGet(e) {
   try {
-    const brandId = (e.parameter.brand || '').trim();
-    const sheet   = getOrCreateSheet();
-    const rows    = sheet.getDataRange().getValues();
+    const action  = (e.parameter.action || '').trim();
+    const brandId = (e.parameter.brand  || '').trim();
 
-    // Sin ?brand= → devolver índice de todas las marcas
+    // ?action=save&brand=XXX&payload=JSON → guardar datos
+    if (action === 'save') {
+      if (!brandId) return jsonOut({ ok: false, error: 'Falta parámetro brand' });
+      const payloadStr = e.parameter.payload || '{}';
+      const data = JSON.parse(payloadStr);
+      return saveBrand(brandId, data);
+    }
+
+    // ?brand=XXX → leer datos de una marca
+    const sheet = getOrCreateSheet();
+    const rows  = sheet.getDataRange().getValues();
+
     if (!brandId) {
+      // Sin parámetros → índice de todas las marcas
       const brands = [];
       for (let i = 1; i < rows.length; i++) {
         if (rows[i][0]) brands.push({ id: String(rows[i][0]).trim(), nombre: String(rows[i][1]).trim() });
@@ -49,36 +60,37 @@ function doGet(e) {
   }
 }
 
-// ── GUARDAR datos (admin los envía aquí) ─────────────────────
-function doPost(e) {
+// ── GUARDAR (llamado desde doGet con action=save) ─────────────
+function saveBrand(brandId, data) {
   try {
-    // Soporta JSON directo (text/plain) y formulario HTML (form POST)
-    let body;
-    try { body = JSON.parse(e.postData.contents); }
-    catch(pe) { body = JSON.parse(e.parameter.payload || '{}'); }
-    const { brandId, data } = body;
-
-    if (!brandId || !data) {
-      return jsonOut({ ok: false, error: 'Faltan campos requeridos: brandId, data' });
-    }
-
     const sheet     = getOrCreateSheet();
     const rows      = sheet.getDataRange().getValues();
     const timestamp = new Date().toISOString();
     const jsonStr   = JSON.stringify(data);
 
-    // Actualizar fila existente
     for (let i = 1; i < rows.length; i++) {
       if (String(rows[i][0]).trim() === brandId) {
+        sheet.getRange(i + 1, 2).setValue(data.nombre || brandId);
         sheet.getRange(i + 1, 3).setValue(jsonStr);
         sheet.getRange(i + 1, 4).setValue(timestamp);
         return jsonOut({ ok: true, action: 'updated', brandId, updatedAt: timestamp });
       }
     }
 
-    // Crear nueva fila
-    sheet.appendRow([brandId, brandId, jsonStr, timestamp]);
+    sheet.appendRow([brandId, data.nombre || brandId, jsonStr, timestamp]);
     return jsonOut({ ok: true, action: 'created', brandId, updatedAt: timestamp });
+  } catch(err) {
+    return jsonOut({ ok: false, error: err.toString() });
+  }
+}
+
+// ── doPost se mantiene por compatibilidad ─────────────────────
+function doPost(e) {
+  try {
+    let body;
+    try { body = JSON.parse(e.postData.contents); }
+    catch(pe) { body = JSON.parse(e.parameter.payload || '{}'); }
+    return saveBrand(body.brandId || '', body.data || {});
   } catch(err) {
     return jsonOut({ ok: false, error: err.toString() });
   }
