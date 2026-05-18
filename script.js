@@ -2182,45 +2182,113 @@ function downloadICS() {
  * El admin descarga el archivo y lo sube al repositorio GitHub.
  * client.html intentará cargarlo con fetch('./client-data.json').
  */
-function generateClientExport() {
-  const exportData = { _generated: new Date().toISOString(), _version: 2, brands: {} };
+// ── EXPORTAR VISTA CLIENTE ───────────────────────────────────
 
-  for (const [id, b] of Object.entries(state.brands || {})) {
-    // Solo campos visibles para el cliente por contenido
-    const contenidos = (b.contenidos || []).map(c => ({
+/** Abre el modal de configuración de exportación */
+function generateClientExport() {
+  // Poblar selector de marcas
+  const brandSel = document.getElementById('exportBrand');
+  brandSel.innerHTML = Object.entries(state.brands || {}).map(([id, b]) =>
+    `<option value="${id}" ${id === state.currentBrand ? 'selected' : ''}>${b.nombre}</option>`
+  ).join('');
+
+  updateExportBrandUI();
+  openModal('modal-export-config');
+}
+
+/** Actualiza los selectores de mes y plataformas cuando cambia la marca */
+function updateExportBrandUI() {
+  const brandId = document.getElementById('exportBrand').value;
+  const b = state.brands[brandId];
+  if (!b) return;
+
+  // Meses con contenido
+  const months = ALL_MONTHS.filter(m => (b.contenidos || []).some(c => c.mes === m));
+  const monthSel = document.getElementById('exportMonth');
+  monthSel.innerHTML = months.length
+    ? months.map(m => `<option value="${m}">${m}</option>`).join('')
+    : '<option value="">— Sin contenidos —</option>';
+
+  // Plataformas: solo las activas de la marca
+  const hiddenPlats = b.clientHiddenPlats || [];
+  const ALL_PLATS   = ['instagram', 'tiktok', 'facebook', 'youtube', 'linkedin'];
+  document.getElementById('exportPlats').innerHTML = ALL_PLATS
+    .filter(p => (b.plataformas || []).includes(p))
+    .map(p => `
+      <label class="checkbox-label" style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+        <input type="checkbox" class="exportPlatChk" value="${p}"
+          ${!hiddenPlats.includes(p) ? 'checked' : ''} />
+        ${PLAT_LABELS[p] || p}
+      </label>`).join('');
+}
+
+/** Genera y descarga el client-data.json con solo marca+mes+plataformas seleccionadas */
+function confirmClientExport() {
+  const brandId = document.getElementById('exportBrand').value;
+  const month   = document.getElementById('exportMonth').value;
+  if (!brandId || !month) { showToast('Selecciona marca y mes', 'error'); return; }
+
+  const b = state.brands[brandId];
+  if (!b) return;
+
+  // Plataformas seleccionadas
+  const checkedPlats   = [...document.querySelectorAll('.exportPlatChk:checked')].map(c => c.value);
+  const uncheckedPlats = [...document.querySelectorAll('.exportPlatChk:not(:checked)')].map(c => c.value);
+
+  // Clave YYYY-MM del mes (inferida desde fechas de contenidos)
+  const monthKey = _getMonthKeyForBrand(b, month);
+
+  // Contenidos del mes seleccionado únicamente
+  const contenidos = (b.contenidos || [])
+    .filter(c => c.mes === month)
+    .map(c => ({
       id:              c.id,
       mes:             c.mes,
       tipo:            c.tipo,
       idea:            c.idea,
-      objetivo:        c.objetivo,
-      hook:            c.hook   || '',
-      cta:             c.cta   || '',
+      objetivo:        c.objetivo || '',
+      hook:            c.hook     || '',
+      cta:             c.cta      || '',
       estado:          c.estado,
-      clientAprobo:    c.clientAprobo   || '',
+      clientAprobo:    c.clientAprobo    || '',
       fechaAprobacion: c.fechaAprobacion || '',
-      clientNota:      c.clientNota     || '',
-      obs:             c.obs            || '',
-      driveVideo:      c.driveVideo     || '',
-      driveFolder:     c.driveFolder    || '',
+      clientNota:      c.clientNota      || '',
+      obs:             c.obs             || '',
+      driveVideo:      c.driveVideo      || '',
+      driveFolder:     c.driveFolder     || '',
       ig: { publicado: c.ig?.publicado || 'No', fecha: c.ig?.fecha || '', link: c.ig?.link || '' },
       tk: { publicado: c.tk?.publicado || 'No', fecha: c.tk?.fecha || '', link: c.tk?.link || '' },
     }));
 
-    exportData.brands[id] = {
-      id:                 b.id,
-      nombre:             b.nombre,
-      sector:             b.sector     || '',
-      color:              b.color      || '#F45A00',
-      igHandle:           b.igHandle   || '',
-      tkHandle:           b.tkHandle   || '',
-      plataformas:        b.plataformas || [],
-      clientHiddenMonths: b.clientHiddenMonths || [],
-      clientHiddenPlats:  b.clientHiddenPlats  || [],
-      clientPin:          b.clientPin  || '',
-      contenidos,
-      feedByMonth:        b.feedByMonth || {},
-    };
+  // Feed del mes seleccionado únicamente
+  const feedByMonth = {};
+  if (monthKey && b.feedByMonth?.[monthKey]) {
+    feedByMonth[monthKey] = b.feedByMonth[monthKey];
   }
+
+  const exportData = {
+    _generated:     new Date().toISOString(),
+    _version:       3,
+    _selectedBrand: brandId,
+    _selectedMonth: month,
+    _selectedMonthKey: monthKey || '',
+    brands: {
+      [brandId]: {
+        id:                 b.id || brandId,
+        nombre:             b.nombre,
+        sector:             b.sector     || '',
+        color:              b.color      || '#F45A00',
+        igHandle:           b.igHandle   || '',
+        tkHandle:           b.tkHandle   || '',
+        plataformas:        checkedPlats,
+        clientHiddenMonths: ALL_MONTHS.filter(m => m !== month), // solo mes seleccionado visible
+        clientHiddenPlats:  uncheckedPlats,
+        clientPin:          b.clientPin  || '',
+        contenidos,
+        feedByMonth,
+      }
+    }
+  };
 
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -2231,12 +2299,28 @@ function generateClientExport() {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
 
-  // Mostrar instrucciones para subir el archivo a GitHub
+  closeModal('modal-export-config');
+  showToast(`✅ client-data.json exportado — ${b.nombre} / ${month}`);
   showExportInstructions();
 }
 
+/** Obtiene la clave YYYY-MM de un mes dado, inferida desde las fechas de contenidos de la marca */
+function _getMonthKeyForBrand(b, monthName) {
+  const nums = {
+    'Enero':'01','Febrero':'02','Marzo':'03','Abril':'04',
+    'Mayo':'05','Junio':'06','Julio':'07','Agosto':'08',
+    'Septiembre':'09','Octubre':'10','Noviembre':'11','Diciembre':'12'
+  };
+  const num = nums[monthName];
+  if (!num) return null;
+  const dates = (b.contenidos || [])
+    .filter(c => c.mes === monthName)
+    .flatMap(c => [c.ig?.fecha, c.tk?.fecha].filter(Boolean));
+  const year = dates.length ? parseInt(dates[0].split('-')[0]) : new Date().getFullYear();
+  return `${year}-${num}`;
+}
+
 function showExportInstructions() {
-  // Abrir modal con instrucciones paso a paso
   const existing = document.getElementById('modal-export-instructions');
   if (existing) { existing.classList.add('open'); return; }
 
@@ -2251,18 +2335,18 @@ function showExportInstructions() {
       </div>
       <div class="modal-body">
         <p style="font-size:13px;color:var(--t-soft);margin:0 0 16px;">
-          Se descargó <strong>client-data.json</strong>. Para que tus clientes vean los datos actualizados desde cualquier dispositivo, sigue estos pasos:
+          Se descargó <strong>client-data.json</strong>. Súbelo a GitHub para que el cliente lo vea:
         </p>
-        <ol style="font-size:13px;line-height:2;padding-left:20px;color:var(--text);margin:0 0 16px;">
-          <li>Abre <a href="https://github.com/vaalenhernandez/dashboard-ips" target="_blank" style="color:var(--accent);">tu repositorio en GitHub ↗</a></li>
-          <li>Haz clic en <strong>Add file → Upload files</strong></li>
-          <li>Arrastra o selecciona el archivo <strong>client-data.json</strong> descargado</li>
-          <li>Escribe un mensaje como <em>"Actualizar vista cliente"</em> y haz clic en <strong>Commit changes</strong></li>
-          <li>Espera ~1 minuto y el link del cliente mostrará los datos actualizados ✅</li>
+        <ol style="font-size:13px;line-height:2.2;padding-left:20px;color:var(--text);margin:0 0 16px;">
+          <li>Abre <a href="https://github.com/vaalenhernandez/dashboard-clientes" target="_blank" style="color:var(--accent);">tu repositorio en GitHub ↗</a></li>
+          <li>Clic en <strong>Add file → Upload files</strong></li>
+          <li>Arrastra el archivo <strong>client-data.json</strong> que se descargó</li>
+          <li>Clic en <strong>Commit changes</strong></li>
+          <li>Espera ~1 min → el cliente refresca y ya ve los datos ✅</li>
         </ol>
         <div style="background:var(--bg-secondary);border-radius:10px;padding:12px;font-size:12px;color:var(--t-soft);">
-          💡 <strong>Tip:</strong> El link del cliente es:<br>
-          <code style="font-size:11px;word-break:break-all;">https://vaalenhernandez.github.io/dashboard-ips/client.html?brand=so</code>
+          💡 Link del cliente:<br>
+          <code style="font-size:11px;word-break:break-all;">https://vaalenhernandez.github.io/dashboard-clientes/client.html?brand=so</code>
         </div>
       </div>
       <div class="modal-footer">

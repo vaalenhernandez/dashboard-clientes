@@ -833,6 +833,11 @@ function _initWithState(appState, brandParam, keyParam, isLocal) {
     slugify(b.nombre) === slugify(brandParam)
   );
 
+  // Si no vino brandParam pero solo hay una marca en el JSON, auto-seleccionarla
+  if (!_brand && !brandParam && brands.length === 1) {
+    _brand = brands[0];
+  }
+
   if (!_brand) {
     if (!brandParam) {
       showBrandSelector(brands);

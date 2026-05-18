@@ -744,6 +744,37 @@
 </div>
 
 <!-- ── MODAL GESTIONAR FEED ─────────────────────── -->
+<!-- Modal: Exportar vista cliente -->
+<div class="modal-overlay" id="modal-export-config">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 class="modal-title">📤 Exportar vista cliente</h2>
+      <button class="modal-close" onclick="closeModal('modal-export-config')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Marca</label>
+        <select id="exportBrand" onchange="updateExportBrandUI()"></select>
+      </div>
+      <div class="form-group">
+        <label>Mes a exportar</label>
+        <select id="exportMonth"></select>
+      </div>
+      <div class="form-group">
+        <label>Plataformas visibles para el cliente</label>
+        <div id="exportPlats" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;"></div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:10px;padding:12px;font-size:12px;color:var(--t-soft);margin-top:4px;">
+        📦 Se exportarán solo los contenidos y el feed del mes seleccionado para esa marca.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('modal-export-config')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmClientExport()">📤 Exportar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-feed-manage">
   <div class="modal modal-sm">
     <div class="modal-header">
