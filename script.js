@@ -2176,12 +2176,95 @@ function downloadICS() {
   showToast('Archivo .ics descargado ✓');
 }
 
-// ── EXPORTAR VISTA CLIENTE ───────────────────────────────────
-/**
- * Genera client-data.json con todos los datos visibles para clientes.
- * El admin descarga el archivo y lo sube al repositorio GitHub.
- * client.html intentará cargarlo con fetch('./client-data.json').
- */
+// ── SINCRONIZACIÓN CON GOOGLE APPS SCRIPT ────────────────────
+
+const SYNC_KEY = 'pal_sync_cfg_v1';
+
+function getSyncUrl() {
+  try { return JSON.parse(localStorage.getItem(SYNC_KEY) || '{}').url || ''; } catch(e) { return ''; }
+}
+
+function saveSyncUrl(url) {
+  localStorage.setItem(SYNC_KEY, JSON.stringify({ url }));
+}
+
+function openSyncModal() {
+  const urlInput = document.getElementById('syncScriptUrl');
+  if (urlInput) urlInput.value = getSyncUrl();
+
+  const brandSel = document.getElementById('syncBrand');
+  if (brandSel) {
+    brandSel.innerHTML = Object.entries(state.brands || {}).map(([id, b]) =>
+      `<option value="${id}" ${id === state.currentBrand ? 'selected' : ''}>${b.nombre}</option>`
+    ).join('');
+  }
+  openModal('modal-sync');
+}
+
+function saveSyncUrlFromInput() {
+  const url = (document.getElementById('syncScriptUrl')?.value || '').trim();
+  if (!url.startsWith('https://script.google.com/macros/')) {
+    showToast('URL inválida — debe ser una URL de Google Apps Script', 'error');
+    return;
+  }
+  saveSyncUrl(url);
+  showToast('URL guardada ✓');
+}
+
+async function syncBrandToCloud() {
+  const url = getSyncUrl();
+  if (!url) { showToast('Configura la URL de Apps Script primero', 'error'); return; }
+
+  const brandId = document.getElementById('syncBrand')?.value || state.currentBrand;
+  const b = state.brands[brandId];
+  if (!b) { showToast('Marca no encontrada', 'error'); return; }
+
+  const btn = document.getElementById('btnSyncCloud');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ Sincronizando…'; btn.disabled = true; }
+
+  // Build payload — strip base64 images from feedByMonth slots
+  const feedByMonthClean = {};
+  Object.entries(b.feedByMonth || {}).forEach(([mk, mv]) => {
+    feedByMonthClean[mk] = {
+      ...mv,
+      slots: (mv.slots || []).map(s => ({ id: s.id, contenidoId: s.contenidoId }))
+    };
+  });
+
+  const payload = {
+    brandId,
+    data: {
+      nombre: b.nombre,
+      contenidos: (b.contenidos || []).map(c => {
+        const { img, portada, ...rest } = c;
+        return rest;
+      }),
+      feedByMonth: feedByMonthClean,
+      clientHiddenMonths: b.clientHiddenMonths || [],
+      clientHiddenPlatforms: b.clientHiddenPlatforms || []
+    }
+  };
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (json.ok) {
+      showToast(`☁️ Sincronizado: ${brandId} (${json.action}) ✓`);
+      closeModal('modal-sync');
+    } else {
+      showToast('Error: ' + (json.error || 'Respuesta inválida'), 'error');
+    }
+  } catch(err) {
+    showToast('Error de red: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.textContent = original; btn.disabled = false; }
+  }
+}
+
 // ── EXPORTAR VISTA CLIENTE ───────────────────────────────────
 
 /** Abre el modal de configuración de exportación */

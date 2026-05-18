@@ -780,6 +780,9 @@
 const STORAGE_KEY        = 'pal_agency_v3';          // admin localStorage (read-only en cliente)
 const SESSION_KEY        = 'pal_client_auth';
 const CLIENT_APR_KEY     = 'pal_client_approvals_v1'; // aprobaciones del cliente (siempre local)
+
+// URL de Google Apps Script — puede sobreescribirse con ?script=URL en la URL del cliente
+const APPS_SCRIPT_URL    = '';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -794,32 +797,50 @@ let _filterPlat  = '';
 let _filterEstado = '';
 
 // ── INIT ───────────────────────────────────────────────────────
-function init() {
+async function init() {
   const params     = new URLSearchParams(location.search);
   const brandParam = params.get('brand') || '';
   const keyParam   = params.get('key')   || '';
+  const scriptUrl  = params.get('script') || APPS_SCRIPT_URL;
 
-  // 1️⃣ Intentar cargar client-data.json (cross-device, GitHub Pages)
-  fetch('./client-data.json?_=' + Date.now())
-    .then(r => { if (!r.ok) throw new Error('no-file'); return r.json(); })
-    .then(exportedData => {
-      _initWithState(exportedData, brandParam, keyParam, /*isLocal=*/false);
-    })
-    .catch(() => {
-      // 2️⃣ Fallback: localStorage (mismo navegador que el admin)
-      const rawState = localStorage.getItem(STORAGE_KEY);
-      if (!rawState) {
-        showError(
-          'No hay datos disponibles.<br>' +
-          '<small style="font-size:13px;color:#999;">Solicita a tu agencia el enlace de acceso correcto.<br>' +
-          'Si eres el administrador, usa el botón <strong>📤 Publicar vista cliente</strong> en Configuración.</small>'
-        );
+  // 1️⃣ Intentar cargar desde Google Apps Script (nube, tiempo real)
+  if (scriptUrl && brandParam) {
+    try {
+      const url = scriptUrl + '?brand=' + encodeURIComponent(brandParam) + '&_=' + Date.now();
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (json.ok && json.data) {
+        // Wrap brand data into the appState shape client.html expects
+        const brandData = { ...json.data, id: brandParam };
+        const appState  = { brands: { [brandParam]: brandData } };
+        _initWithState(appState, brandParam, keyParam, /*isLocal=*/false);
         return;
       }
-      let appState;
-      try { appState = JSON.parse(rawState); } catch(e) { showError('Error al cargar datos.'); return; }
-      _initWithState(appState, brandParam, keyParam, /*isLocal=*/true);
-    });
+    } catch(e) { /* fall through */ }
+  }
+
+  // 2️⃣ Intentar cargar client-data.json (GitHub Pages / descarga manual)
+  try {
+    const r = await fetch('./client-data.json?_=' + Date.now());
+    if (!r.ok) throw new Error('no-file');
+    const exportedData = await r.json();
+    _initWithState(exportedData, brandParam, keyParam, /*isLocal=*/false);
+    return;
+  } catch(e) { /* fall through */ }
+
+  // 3️⃣ Fallback: localStorage (mismo navegador que el admin)
+  const rawState = localStorage.getItem(STORAGE_KEY);
+  if (!rawState) {
+    showError(
+      'No hay datos disponibles.<br>' +
+      '<small style="font-size:13px;color:#999;">Solicita a tu agencia el enlace de acceso correcto.<br>' +
+      'Si eres el administrador, usa el botón <strong>☁️ Sincronizar con cliente</strong> en Configuración.</small>'
+    );
+    return;
+  }
+  let appState;
+  try { appState = JSON.parse(rawState); } catch(e) { showError('Error al cargar datos.'); return; }
+  _initWithState(appState, brandParam, keyParam, /*isLocal=*/true);
 }
 
 function _initWithState(appState, brandParam, keyParam, isLocal) {

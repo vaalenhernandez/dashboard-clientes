@@ -319,7 +319,8 @@
         <p class="page-subtitle" id="configBrandName"></p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn-primary" onclick="generateClientExport()" title="Descarga client-data.json y súbelo a GitHub para que los clientes vean datos actualizados">📤 Publicar vista cliente</button>
+        <button class="btn-primary" onclick="openSyncModal()">☁️ Sincronizar con cliente</button>
+        <button class="btn-secondary" onclick="generateClientExport()" title="Descarga client-data.json y súbelo a GitHub">📤 Exportar JSON</button>
         <button class="btn-secondary" onclick="exportData()" title="Descargar respaldo JSON">⬇ Exportar datos</button>
         <label class="btn-secondary" style="cursor:pointer;" title="Cargar respaldo JSON">
           ⬆ Importar datos
@@ -745,6 +746,36 @@
 
 <!-- ── MODAL GESTIONAR FEED ─────────────────────── -->
 <!-- Modal: Exportar vista cliente -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 class="modal-title">☁️ Sincronizar con cliente</h2>
+      <button class="modal-close" onclick="closeModal('modal-sync')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>URL de Google Apps Script</label>
+        <input id="syncScriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec" style="width:100%;box-sizing:border-box;">
+        <div style="font-size:11px;color:var(--t-soft);margin-top:4px;">Pega la URL de implementación (termina en /exec)</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn-ghost" style="flex:1;" onclick="saveSyncUrlFromInput()">💾 Guardar URL</button>
+      </div>
+      <div class="form-group">
+        <label>Marca a sincronizar</label>
+        <select id="syncBrand"></select>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:10px;padding:12px;font-size:12px;color:var(--t-soft);">
+        Los datos se enviarán directamente a Google Sheets. El cliente verá la información actualizada al instante.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('modal-sync')">Cancelar</button>
+      <button class="btn-primary" id="btnSyncCloud" onclick="syncBrandToCloud()">☁️ Sincronizar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-export-config">
   <div class="modal modal-sm">
     <div class="modal-header">
