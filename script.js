@@ -180,6 +180,7 @@ function load() {
           if (!c.fb) c.fb = { publicado: 'No', fecha: '', link: '' };
           if (c.driveVideo  === undefined) c.driveVideo  = '';
           if (c.driveFolder === undefined) c.driveFolder = '';
+          if (c.portadaUrl  === undefined) c.portadaUrl  = '';
         });
       });
       // Migration: Sentido Óptico uses TikTok, not Facebook
@@ -938,6 +939,22 @@ function viewContenido(id) {
 
 function openNuevoContenido() { openEditContenido(null); }
 
+function convertDriveUrl() {
+  const input = document.getElementById('cPortadaUrl');
+  if (!input) return;
+  const url = input.value.trim();
+  // Extract file ID from Drive sharing URLs
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) {
+    input.value = `https://drive.google.com/uc?id=${match[1]}&export=view`;
+    showToast('URL convertida ✓');
+  } else if (url.includes('drive.google.com')) {
+    showToast('No se pudo extraer el ID. Usa el link de compartir estándar.', 'error');
+  } else {
+    showToast('No es un link de Drive — se usará tal como está');
+  }
+}
+
 function openEditContenido(id) {
   _editingId = id;
   const c = id ? currentBrand().contenidos.find(x=>x.id===id) : null;
@@ -956,6 +973,7 @@ function openEditContenido(id) {
   g('cObs', c?.obs);
   g('cDriveVideo',  c?.driveVideo);
   g('cDriveFolder', c?.driveFolder);
+  { const _el = document.getElementById('cPortadaUrl'); if (_el) _el.value = c?.portadaUrl || ''; }
   buildPlatformAccordions(c);
   openModal('modal-contenido');
 }
@@ -1033,6 +1051,7 @@ function saveContenido() {
     obs:        document.getElementById('cObs').value.trim(),
     driveVideo:  document.getElementById('cDriveVideo')?.value.trim()  || '',
     driveFolder: document.getElementById('cDriveFolder')?.value.trim() || '',
+    portadaUrl: (document.getElementById('cPortadaUrl')?.value || '').trim(),
     ...platData
   };
 
@@ -2058,6 +2077,7 @@ function importData(event) {
           if (!c.fb) c.fb = { publicado: 'No', fecha: '', link: '' };
           if (c.driveVideo  === undefined) c.driveVideo  = '';
           if (c.driveFolder === undefined) c.driveFolder = '';
+          if (c.portadaUrl  === undefined) c.portadaUrl  = '';
         });
       });
       save();

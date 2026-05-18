@@ -419,6 +419,17 @@
       </div>
 
       <div class="form-section">
+        <div class="form-group">
+          <label>📸 URL de imagen para el feed</label>
+          <div style="display:flex;gap:8px;">
+            <input id="cPortadaUrl" type="url" placeholder="Pega link de Google Drive o cualquier imagen pública" style="flex:1;">
+            <button type="button" class="btn-ghost" onclick="convertDriveUrl()" style="white-space:nowrap;font-size:12px;">🔗 Convertir Drive</button>
+          </div>
+          <div style="font-size:11px;color:var(--t-soft);margin-top:4px;">Si usas Google Drive: comparte el archivo → "Cualquier persona con el link" → pega el link aquí → clic en "Convertir Drive"</div>
+        </div>
+      </div>
+
+      <div class="form-section">
         <h3 class="form-section-title">🔗 Links para el cliente</h3>
         <div class="form-grid-2">
           <div class="form-group">
