@@ -2211,19 +2211,9 @@ function saveSyncUrlFromInput() {
   showToast('URL guardada ✓');
 }
 
-async function syncBrandToCloud() {
-  const url = getSyncUrl();
-  if (!url) { showToast('Configura la URL de Apps Script primero', 'error'); return; }
-
-  const brandId = document.getElementById('syncBrand')?.value || state.currentBrand;
+function _buildBrandPayload(brandId) {
   const b = state.brands[brandId];
-  if (!b) { showToast('Marca no encontrada', 'error'); return; }
-
-  const btn = document.getElementById('btnSyncCloud');
-  const original = btn ? btn.textContent : '';
-  if (btn) { btn.textContent = '⏳ Sincronizando…'; btn.disabled = true; }
-
-  // Build payload — strip base64 images from feedByMonth slots
+  if (!b) return null;
   const feedByMonthClean = {};
   Object.entries(b.feedByMonth || {}).forEach(([mk, mv]) => {
     feedByMonthClean[mk] = {
@@ -2231,37 +2221,47 @@ async function syncBrandToCloud() {
       slots: (mv.slots || []).map(s => ({ id: s.id, contenidoId: s.contenidoId }))
     };
   });
-
-  const payload = {
+  return {
     brandId,
     data: {
       nombre: b.nombre,
-      contenidos: (b.contenidos || []).map(c => {
-        const { img, portada, ...rest } = c;
-        return rest;
-      }),
+      contenidos: (b.contenidos || []).map(c => { const { img, portada, ...rest } = c; return rest; }),
       feedByMonth: feedByMonthClean,
       clientHiddenMonths: b.clientHiddenMonths || [],
       clientHiddenPlatforms: b.clientHiddenPlatforms || []
     }
   };
+}
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-    if (json.ok) {
-      showToast(`☁️ Sincronizado: ${brandId} (${json.action}) ✓`);
-      closeModal('modal-sync');
-    } else {
-      showToast('Error: ' + (json.error || 'Respuesta inválida'), 'error');
-    }
-  } catch(err) {
-    showToast('Error de red: ' + err.message, 'error');
-  } finally {
-    if (btn) { btn.textContent = original; btn.disabled = false; }
+async function syncBrandToCloud() {
+  const url = getSyncUrl();
+  if (!url) { showToast('Configura la URL de Apps Script primero', 'error'); return; }
+
+  const btn = document.getElementById('btnSyncCloud');
+  const original = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ Sincronizando…'; btn.disabled = true; }
+
+  // Sincronizar TODAS las marcas
+  const brandIds = Object.keys(state.brands || {});
+  let ok = 0, fail = 0;
+
+  for (const brandId of brandIds) {
+    const payload = _buildBrandPayload(brandId);
+    if (!payload) continue;
+    try {
+      const res  = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.ok) ok++; else fail++;
+    } catch(e) { fail++; }
+  }
+
+  if (btn) { btn.textContent = original; btn.disabled = false; }
+
+  if (fail === 0) {
+    showToast(`☁️ ${ok} marca${ok !== 1 ? 's' : ''} sincronizada${ok !== 1 ? 's' : ''} ✓`);
+    closeModal('modal-sync');
+  } else {
+    showToast(`Sincronizadas: ${ok} — Errores: ${fail}`, fail > 0 && ok === 0 ? 'error' : 'success');
   }
 }
 

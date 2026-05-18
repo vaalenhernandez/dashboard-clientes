@@ -761,17 +761,13 @@
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="btn-ghost" style="flex:1;" onclick="saveSyncUrlFromInput()">💾 Guardar URL</button>
       </div>
-      <div class="form-group">
-        <label>Marca a sincronizar</label>
-        <select id="syncBrand"></select>
-      </div>
       <div style="background:var(--bg-secondary);border-radius:10px;padding:12px;font-size:12px;color:var(--t-soft);">
-        Los datos se enviarán directamente a Google Sheets. El cliente verá la información actualizada al instante.
+        Sincroniza <strong>todas las marcas</strong> a la vez. El cliente verá la información actualizada al instante.
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" onclick="closeModal('modal-sync')">Cancelar</button>
-      <button class="btn-primary" id="btnSyncCloud" onclick="syncBrandToCloud()">☁️ Sincronizar</button>
+      <button class="btn-primary" id="btnSyncCloud" onclick="syncBrandToCloud()">☁️ Sincronizar todas</button>
     </div>
   </div>
 </div>

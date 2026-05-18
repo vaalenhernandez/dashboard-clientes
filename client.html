@@ -791,6 +791,8 @@ let _brand      = null;
 let _brandId    = null;
 let _month      = null;
 let _dataSource = 'json'; // 'json' | 'local' — de dónde vienen los datos
+let _scriptUrl  = '';     // Apps Script URL activa (para recargar al elegir marca)
+let _keyParam   = '';     // ?key= param activo
 let _pendingChangesId = null;
 let _modalContentId   = null;
 let _filterPlat  = '';
@@ -804,17 +806,48 @@ async function init() {
   const scriptUrl  = params.get('script') || APPS_SCRIPT_URL;
 
   // 1️⃣ Intentar cargar desde Google Apps Script (nube, tiempo real)
-  if (scriptUrl && brandParam) {
+  if (scriptUrl) {
     try {
-      const url = scriptUrl + '?brand=' + encodeURIComponent(brandParam) + '&_=' + Date.now();
-      const res  = await fetch(url);
-      const json = await res.json();
-      if (json.ok && json.data) {
-        // Wrap brand data into the appState shape client.html expects
-        const brandData = { ...json.data, id: brandParam };
-        const appState  = { brands: { [brandParam]: brandData } };
-        _initWithState(appState, brandParam, keyParam, /*isLocal=*/false);
-        return;
+      if (brandParam) {
+        // Cargar una marca específica
+        const url  = scriptUrl + '?brand=' + encodeURIComponent(brandParam) + '&_=' + Date.now();
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.ok && json.data) {
+          const brandData = { ...json.data, id: brandParam };
+          const appState  = { brands: { [brandParam]: brandData } };
+          _initWithState(appState, brandParam, keyParam, /*isLocal=*/false);
+          return;
+        }
+      } else {
+        // Sin brand param → pedir índice de marcas y mostrar selector
+        const url  = scriptUrl + '?_=' + Date.now();
+        const res  = await fetch(url);
+        const json = await res.json();
+        if (json.ok && json.brands && json.brands.length > 0) {
+          if (json.brands.length === 1) {
+            // Una sola marca → cargar directamente
+            const bid  = json.brands[0].id;
+            const url2 = scriptUrl + '?brand=' + encodeURIComponent(bid) + '&_=' + Date.now();
+            const res2 = await fetch(url2);
+            const j2   = await res2.json();
+            if (j2.ok && j2.data) {
+              const appState = { brands: { [bid]: { ...j2.data, id: bid } } };
+              _initWithState(appState, bid, keyParam, /*isLocal=*/false);
+              return;
+            }
+          } else {
+            // Varias marcas → mostrar selector usando los datos del índice
+            // Construir un appState con las marcas del índice para el selector
+            const brandsMap = {};
+            json.brands.forEach(b => { brandsMap[b.id] = { id: b.id, nombre: b.nombre }; });
+            // Mostrar selector; al elegir, recargar con ?brand=ID&script=URL
+            _scriptUrl = scriptUrl;
+            _keyParam  = keyParam;
+            showBrandSelector(Object.values(brandsMap), /*fromCloud=*/true);
+            return;
+          }
+        }
       }
     } catch(e) { /* fall through */ }
   }
@@ -1604,7 +1637,15 @@ function showError(msg) {
     </div>`;
 }
 
-function showBrandSelector(brands) {
+function showBrandSelector(brands, fromCloud = false) {
+  const makeHref = (id) => {
+    const p = new URLSearchParams(location.search);
+    p.set('brand', id);
+    if (fromCloud && _scriptUrl) p.set('script', _scriptUrl);
+    if (_keyParam) p.set('key', _keyParam);
+    return '?' + p.toString();
+  };
+
   document.getElementById('authGate').innerHTML = `
     <div class="auth-card" style="max-width:480px;">
       <div style="font-size:36px;margin-bottom:16px;">🔗</div>
@@ -1612,7 +1653,7 @@ function showBrandSelector(brands) {
       <div class="auth-sub" style="margin-bottom:24px;">Accede mediante el enlace específico de tu marca</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         ${brands.map(b => `
-          <a href="?brand=${b.id}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;
+          <a href="${makeHref(b.id)}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;
             background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.08);
             text-decoration:none;color:inherit;transition:box-shadow 0.15s;"
             onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'"

@@ -23,12 +23,17 @@ const SHEET_NAME = 'ClientData';
 function doGet(e) {
   try {
     const brandId = (e.parameter.brand || '').trim();
-    if (!brandId) {
-      return jsonOut({ ok: false, error: 'Falta parámetro ?brand=XXX' });
-    }
+    const sheet   = getOrCreateSheet();
+    const rows    = sheet.getDataRange().getValues();
 
-    const sheet = getOrCreateSheet();
-    const rows  = sheet.getDataRange().getValues();
+    // Sin ?brand= → devolver índice de todas las marcas
+    if (!brandId) {
+      const brands = [];
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0]) brands.push({ id: String(rows[i][0]).trim(), nombre: String(rows[i][1]).trim() });
+      }
+      return jsonOut({ ok: true, brands });
+    }
 
     for (let i = 1; i < rows.length; i++) {
       if (String(rows[i][0]).trim() === brandId) {
