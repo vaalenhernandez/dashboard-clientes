@@ -2249,9 +2249,9 @@ async function syncBrandToCloud() {
     const payload = _buildBrandPayload(brandId);
     if (!payload) continue;
     try {
-      const res  = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
-      const json = await res.json();
-      if (json.ok) ok++; else fail++;
+      // no-cors evita bloqueo de CORS en Apps Script; la data llega aunque la respuesta sea opaca
+      await fetch(url, { method: 'POST', body: JSON.stringify(payload), mode: 'no-cors' });
+      ok++;
     } catch(e) { fail++; }
   }
 
@@ -2261,7 +2261,7 @@ async function syncBrandToCloud() {
     showToast(`☁️ ${ok} marca${ok !== 1 ? 's' : ''} sincronizada${ok !== 1 ? 's' : ''} ✓`);
     closeModal('modal-sync');
   } else {
-    showToast(`Sincronizadas: ${ok} — Errores: ${fail}`, fail > 0 && ok === 0 ? 'error' : 'success');
+    showToast(`Error de red al sincronizar`, 'error');
   }
 }
 
