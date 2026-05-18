@@ -1,0 +1,352 @@
+{
+  "_generated": "2026-05-18T02:53:18.925Z",
+  "_version": 3,
+  "_selectedBrand": "so",
+  "_selectedMonth": "Mayo",
+  "_selectedMonthKey": "2026-05",
+  "brands": {
+    "so": {
+      "id": "so",
+      "nombre": "Sentido Óptico",
+      "sector": "Salud visual",
+      "color": "#5877d5",
+      "igHandle": "@sentidooptico",
+      "tkHandle": "@sentidooptico",
+      "plataformas": [
+        "instagram"
+      ],
+      "clientHiddenMonths": [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre"
+      ],
+      "clientHiddenPlats": [
+        "tiktok"
+      ],
+      "clientPin": "",
+      "contenidos": [
+        {
+          "id": "id_1778305912054_bvu0li",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Esperar a ver mal para ir al optómetra",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Publicado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "2026-05-04",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "Sí",
+            "fecha": "2026-05-04",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778305945508_8whkwq",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Mamá siempre vio por nosotros",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Publicado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "2026-05-09",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "Sí",
+            "fecha": "2026-05-10",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778864884443_9y51kk",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Lentes de contacto",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Publicado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "Sí",
+            "fecha": "2026-05-13",
+            "link": "https://www.instagram.com/p/DYS0607NXX6/"
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778864919814_7mxdgx",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Lo que comes puede estar dañando tu visión",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-15",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778864939932_m8uuq1",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Estas en Armenia y necesitas gafas",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-16",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778864963088_vd5em9",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Lentes antireflejo",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-18",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778864988326_02pb3m",
+          "mes": "Mayo",
+          "tipo": "Carrusel",
+          "idea": "Señales de que necesitas lentes",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "En aprobación",
+          "clientAprobo": "Pendiente",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-20",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778865023786_06pb0t",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Error al elegir montura",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-22",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778865051711_vnttjm",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Estas alejando tu celular para ver bien",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "No",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-23",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778865075813_jhebrn",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Reaccionando a las monturas de sentido óptico",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-25",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778865106632_kwk22d",
+          "mes": "Mayo",
+          "tipo": "Reel",
+          "idea": "Aquí el examen visual es gratis",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "Aprobado",
+          "clientAprobo": "Sí",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-27",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        },
+        {
+          "id": "id_1778865127142_muezmo",
+          "mes": "Mayo",
+          "tipo": "Carrusel",
+          "idea": "Monturas favoritas del mes",
+          "objetivo": "Educación",
+          "hook": "",
+          "cta": "",
+          "estado": "En aprobación",
+          "clientAprobo": "Pendiente",
+          "fechaAprobacion": "",
+          "clientNota": "",
+          "obs": "",
+          "driveVideo": "",
+          "driveFolder": "",
+          "ig": {
+            "publicado": "No",
+            "fecha": "2026-05-29",
+            "link": ""
+          },
+          "tk": {
+            "publicado": "No",
+            "fecha": "",
+            "link": ""
+          }
+        }
+      ],
+      "feedByMonth": {}
+    }
+  }
+}
